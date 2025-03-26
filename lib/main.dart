@@ -1,8 +1,6 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const MyApp());
@@ -33,122 +31,48 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-  String _location = "Fetching location...";
-  late StreamSubscription<Position> _positionStream;
+  String _liveLocation = "Fetching live location...";
+  final List<String> _locationHistory = [];
+
+  static const platform = MethodChannel(
+    'com.example.new_project_location/location',
+  );
 
   @override
   void initState() {
     super.initState();
-    _requestPermission();
+
+    // Listen for updates from the native side
+    platform.setMethodCallHandler(_methodCallHandler);
   }
 
-  // Request permission for location: first ask for "When in use" and then for "Always"
-  Future<void> _requestPermission() async {
-    // First, ask for "When in use" permission
-    PermissionStatus whenInUsePermission =
-        await Permission.locationWhenInUse.request();
+  Future<void> _methodCallHandler(MethodCall call) async {
+    if (call.method == 'updateLocation') {
+      final locationData = call.arguments as Map;
+      final latitude = locationData['latitude'];
+      final longitude = locationData['longitude'];
 
-    if (whenInUsePermission.isGranted) {
-      // If "When in use" permission is granted, ask for "Always" permission
-      PermissionStatus alwaysPermission =
-          await Permission.locationAlways.request();
-
-      if (alwaysPermission.isGranted) {
-        // If "Always" permission is granted, start tracking location
-        _startLocationTracking();
-      } else {
-        // If "Always" permission is denied, show an alert or handle accordingly
-        setState(() {
-          _location = "Location 'Always' permission denied.";
-        });
-      }
-    } else {
-      // If "When in use" permission is denied, show an alert or handle accordingly
+      // Update the live location text
       setState(() {
-        _location = "Location 'When in use' permission denied.";
+        _liveLocation =
+            "Live Location - Latitude: $latitude, Longitude: $longitude";
+        _addLocationToHistory(latitude, longitude);
       });
     }
   }
 
-  Future<void> _startLocationTracking() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      setState(() {
-        _location = "Location services are disabled.";
-      });
-      return;
+  // Add the new location to the history (keep the last 9 locations)
+  void _addLocationToHistory(double latitude, double longitude) {
+    String newLocation = "Lat: $latitude, Lon: $longitude";
+
+    // Ensure we only keep the last 9 locations
+    if (_locationHistory.length >= 9) {
+      _locationHistory.removeAt(0); // Remove the oldest
     }
 
-    LocationSettings locationSettings = const LocationSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 1,
-      timeLimit: Duration(minutes: 10),
-    );
-
-    if (Theme.of(context).platform == TargetPlatform.iOS) {
-      locationSettings = AppleSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 1,
-        activityType: ActivityType.automotiveNavigation,
-        pauseLocationUpdatesAutomatically: false,
-        timeLimit: Duration(days: 30),
-        showBackgroundLocationIndicator: true, // This is the key for iOS
-        allowBackgroundLocationUpdates: true,
-      );
-    } else if (Theme.of(context).platform == TargetPlatform.android) {
-      locationSettings = AndroidSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 1,
-        forceLocationManager: true,
-        intervalDuration: const Duration(milliseconds: 1000),
-        foregroundNotificationConfig: const ForegroundNotificationConfig(
-          notificationText:
-              "Example app is tracking your location in background",
-          notificationTitle: "Background tracking",
-          notificationIcon: AndroidResource(
-            name: 'ic_launcher',
-            defType: 'drawable',
-          ),
-        ),
-      );
-    }
-
-    _positionStream = Geolocator.getPositionStream(
-      locationSettings: locationSettings,
-    ).listen((Position position) {
-      setState(() {
-        _location =
-            "Latitude: ${position.latitude}, Longitude: ${position.longitude}";
-      });
-      debugPrint(
-        "Latitude: ${position.latitude}, Longitude: ${position.longitude}",
-      );
-    });
-
-    // Background permission is handled by the LocationSettings and platform settings
-    // No need for platform-specific methods like isBackgroundLocationPermitted() or setAllowsBackgroundLocationUpdates()
-  }
-
-  // Stop location tracking
-  void _stopLocationTracking() {
-    _positionStream.cancel();
     setState(() {
-      _location = "Location tracking stopped.";
+      _locationHistory.add(newLocation);
     });
-  }
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
-  @override
-  void dispose() {
-    // Cancel location tracking when the widget is disposed
-    _stopLocationTracking();
-    super.dispose();
   }
 
   @override
@@ -162,20 +86,29 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            // Display live location
             Text(
-              'Current Location: $_location',
+              _liveLocation,
               style: Theme.of(context).textTheme.bodyLarge,
               textAlign: TextAlign.center,
             ),
+            SizedBox(height: 20),
+            // Display a list of background locations
+            Text(
+              'Background Location History:',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            SizedBox(height: 10),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _locationHistory.length,
+                itemBuilder: (context, index) {
+                  return ListTile(title: Text(_locationHistory[index]));
+                },
+              ),
+            ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _incrementCounter();
-        },
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
