@@ -26,12 +26,14 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>We need your location for...</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>We need your location for...</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Your app needs access to your location.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We need your location for...</string>
+	<string>Your app needs access to your location when in use.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Your app needs access to your location even in the background.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Your app needs access to your location at all times.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
@@ -60,7 +62,7 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UIUserNotificationUsageDescription</key>
-		<string>We need your permission to show notifications for location updates.</string>
+	<string>We need your permission to show notifications for location updates.</string>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.example.new_project_location.sendLocation</string>

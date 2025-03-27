@@ -23,24 +23,8 @@ import BackgroundTasks
         locationManager?.allowsBackgroundLocationUpdates = true  // Enable background updates
         locationManager?.showsBackgroundLocationIndicator = true
 
-        // Request Always Authorization
-        locationManager?.requestAlwaysAuthorization()
-
-        // Request notification permissions
-        requestNotificationPermission()
-
-        // Check if location services are enabled and the authorization status
-        if CLLocationManager.locationServicesEnabled() {
-            let status = CLLocationManager.authorizationStatus()
-
-            // Only start updating location if permission is granted
-            if status == .authorizedAlways || status == .authorizedWhenInUse {
-                locationManager?.startUpdatingLocation()
-            } else {
-                // Handle case where permission is not granted (request again if necessary)
-                locationManager?.requestAlwaysAuthorization()
-            }
-        }
+        // Request When in Use Authorization first.
+        locationManager?.requestWhenInUseAuthorization()
 
         // Create a Flutter Method Channel to communicate with Flutter code
         let controller = window?.rootViewController as! FlutterViewController
@@ -76,9 +60,9 @@ import BackgroundTasks
     func requestNotificationPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
             if granted {
-                print("Notification permission granted.")
+                NSLog("Notification permission granted.")
             } else {
-                print("Notification permission denied.")
+                NSLog("Notification permission denied.")
             }
         }
     }
@@ -113,6 +97,11 @@ import BackgroundTasks
         // Send location data to Flutter via method channel
         flutterChannel?.invokeMethod("updateLocation", arguments: locationData)
 
+        // Check if always authorization is necessary, if so request it.
+        if(CLLocationManager.authorizationStatus() == .authorizedWhenInUse){
+            requestAlwaysLocationPermission()
+        }
+
         // Schedule the background task to send location updates when the app is terminated
         scheduleBackgroundTask()
     }
@@ -124,9 +113,29 @@ import BackgroundTasks
 
     // CLLocationManagerDelegate method to handle authorization changes
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        let status = CLLocationManager.authorizationStatus()
-        if status == .authorizedAlways || status == .authorizedWhenInUse {
+        let status = manager.authorizationStatus
+        switch status {
+        case .authorizedAlways, .authorizedWhenInUse:
             manager.startUpdatingLocation()
+            if status == .authorizedAlways{
+                requestNotificationPermission()
+            }
+        case .denied, .restricted:
+            // Handle denied or restricted cases, e.g., show an alert
+            NSLog("Location authorization denied or restricted.")
+            manager.stopUpdatingLocation()
+        case .notDetermined:
+            // The user hasn't made a choice yet.
+            break;
+        @unknown default:
+            NSLog("Unknow location authorization status")
+        }
+    }
+
+    // Function to request Always Authorization when needed
+    func requestAlwaysLocationPermission() {
+        if CLLocationManager.authorizationStatus() == .authorizedWhenInUse {
+            locationManager?.requestAlwaysAuthorization()
         }
     }
 
@@ -142,7 +151,7 @@ import BackgroundTasks
         request.httpMethod = "POST"
         request.addValue("gFRat7oK3STU47bWLCgbjj58rRvz0TcabW54H19mjF5Jv3ry7vzmhBxOVGRW8IhF", forHTTPHeaderField: "X-Token")
         request.addValue("ui.medsoft.care", forHTTPHeaderField: "X-Server")
-        request.addValue("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYXlhcmtodXUiLCJpYXQiOjE3NDI4NzUyNjIsImV4cCI6MTc0Mjk2MTY2Mn0.DGBClX_ynOTWV-Udt0aNBoB4-H8MLBPwYPnLJSJHpZ8", forHTTPHeaderField: "X-Medsoft-Token")
+        request.addValue("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYXlhcmtodXUiLCJpYXQiOjE3NDI5NzcxMjYsImV4cCI6MTc0MzA2MzUyNn0.7YmewZdDuWAhZy7-R6340VFJAtMpdP2V64oN5b90tx4", forHTTPHeaderField: "X-Medsoft-Token")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
         // Prepare the request body with location data
