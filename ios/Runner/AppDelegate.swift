@@ -15,16 +15,14 @@ import BackgroundTasks
     ) -> Bool {
         GeneratedPluginRegistrant.register(with: self)
 
-        // Setup CLLocationManager for background location updates
-        locationManager = CLLocationManager()
-        locationManager?.delegate = self
-        locationManager?.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager?.distanceFilter = 10  // meters
-        locationManager?.allowsBackgroundLocationUpdates = true  // Enable background updates
-        locationManager?.showsBackgroundLocationIndicator = true
-
-        // Request When in Use Authorization first.
-        locationManager?.requestWhenInUseAuthorization()
+        // Remove location manager setup from here
+        // locationManager = CLLocationManager()
+        // locationManager?.delegate = self
+        // locationManager?.desiredAccuracy = kCLLocationAccuracyBest
+        // locationManager?.distanceFilter = 10
+        // locationManager?.allowsBackgroundLocationUpdates = true
+        // locationManager?.showsBackgroundLocationIndicator = true
+        // locationManager?.requestWhenInUseAuthorization()
 
         // Create a Flutter Method Channel to communicate with Flutter code
         let controller = window?.rootViewController as! FlutterViewController
@@ -35,11 +33,14 @@ import BackgroundTasks
                 self?.getLastLocation(result: result)
             } else if call.method == "sendLocationToAPI" {
                 if let args = call.arguments as? [String: Any],
-                   let latitude = args["latitude"] as? Double,
-                   let longitude = args["longitude"] as? Double {
+                let latitude = args["latitude"] as? Double,
+                let longitude = args["longitude"] as? Double {
                     let location = CLLocation(latitude: latitude, longitude: longitude)
                     self?.sendLocationToAPI(location: location)
                 }
+            } else if call.method == "startLocationManagerAfterLogin" {
+                self?.startLocationManagerAfterLogin()  // Ensure this line is added
+                result(nil)  // You can send a response if needed
             } else {
                 result(FlutterMethodNotImplemented)
             }
@@ -98,7 +99,7 @@ import BackgroundTasks
         flutterChannel?.invokeMethod("updateLocation", arguments: locationData)
 
         // Check if always authorization is necessary, if so request it.
-        if(CLLocationManager.authorizationStatus() == .authorizedWhenInUse){
+        if CLLocationManager.authorizationStatus() == .authorizedWhenInUse {
             requestAlwaysLocationPermission()
         }
 
@@ -117,7 +118,7 @@ import BackgroundTasks
         switch status {
         case .authorizedAlways, .authorizedWhenInUse:
             manager.startUpdatingLocation()
-            if status == .authorizedAlways{
+            if status == .authorizedAlways {
                 requestNotificationPermission()
             }
         case .denied, .restricted:
@@ -126,9 +127,9 @@ import BackgroundTasks
             manager.stopUpdatingLocation()
         case .notDetermined:
             // The user hasn't made a choice yet.
-            break;
+            break
         @unknown default:
-            NSLog("Unknow location authorization status")
+            NSLog("Unknown location authorization status")
         }
     }
 
@@ -151,7 +152,7 @@ import BackgroundTasks
         request.httpMethod = "POST"
         request.addValue("gFRat7oK3STU47bWLCgbjj58rRvz0TcabW54H19mjF5Jv3ry7vzmhBxOVGRW8IhF", forHTTPHeaderField: "X-Token")
         request.addValue("ui.medsoft.care", forHTTPHeaderField: "X-Server")
-        request.addValue("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYXlhcmtodXUiLCJpYXQiOjE3NDI5NzcxMjYsImV4cCI6MTc0MzA2MzUyNn0.7YmewZdDuWAhZy7-R6340VFJAtMpdP2V64oN5b90tx4", forHTTPHeaderField: "X-Medsoft-Token")
+        request.addValue("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYXlhcmtodXUiLCJpYXQiOjE3NDMwNzIwOTgsImV4cCI6MTc0MzE1ODQ5OH0.iQpO6YlLpxTUSPlT50y7P5ZNotCLGyvK0S5_qwo8IfM", forHTTPHeaderField: "X-Medsoft-Token")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
         // Prepare the request body with location data
@@ -214,5 +215,16 @@ import BackgroundTasks
 
         // Mark the background task as completed
         task.setTaskCompleted(success: true)
+    }
+
+    // Start location manager after user logs in
+    func startLocationManagerAfterLogin() {
+        locationManager = CLLocationManager()
+        locationManager?.delegate = self
+        locationManager?.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager?.distanceFilter = 10
+        locationManager?.allowsBackgroundLocationUpdates = true
+        locationManager?.showsBackgroundLocationIndicator = true
+        locationManager?.requestWhenInUseAuthorization()
     }
 }

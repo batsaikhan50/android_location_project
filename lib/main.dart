@@ -1,9 +1,12 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'login.dart'; // Import login.dart file
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    const MyApp(),
+  ); // Ensure the 'main' method is defined and starts the app
 }
 
 class MyApp extends StatelessWidget {
@@ -16,7 +19,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const LoginScreen(), // This should refer to your LoginScreen widget
     );
   }
 }
@@ -38,12 +41,20 @@ class _MyHomePageState extends State<MyHomePage> {
     'com.example.new_project_location/location',
   );
 
+  static const String xToken =
+      'gFRat7oK3STU47bWLCgbjj58rRvz0TcabW54H19mjF5Jv3ry7vzmhBxOVGRW8IhF'; // Your X-Token
+
+  static const tokenChannel = MethodChannel(
+    'com.example.new_project_location/token',
+  );
+
   @override
   void initState() {
     super.initState();
 
     // Listen for updates from the native side
     platform.setMethodCallHandler(_methodCallHandler);
+    tokenChannel.setMethodCallHandler(_methodCallHandlerToken);
   }
 
   Future<void> _methodCallHandler(MethodCall call) async {
@@ -61,6 +72,14 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  Future<String> _methodCallHandlerToken(MethodCall call) async {
+    if (call.method == 'getToken') {
+      // Return the token as a constant from the Flutter code
+      return xToken;
+    }
+    return '';
+  }
+
   // Add the new location to the history (keep the last 9 locations)
   void _addLocationToHistory(double latitude, double longitude) {
     String newLocation = "Lat: $latitude, Lon: $longitude";
@@ -75,12 +94,52 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Log out method
+  void _logOut() async {
+    // Clear the shared preferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('isLoggedIn'); // Remove the login status key
+
+    // Navigate back to the login screen after logging out
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) =>
+                const LoginScreen(), // Navigate directly to LoginScreen
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.deepPurple),
+              child: Text(
+                'Welcome',
+                style: TextStyle(color: Colors.white, fontSize: 24),
+              ),
+            ),
+            // Display username in the drawer
+            ListTile(title: Text('Username: to-do')),
+            const Divider(), // Divider for clarity
+            ListTile(
+              title: const Text('Log Out'),
+              onTap: () {
+                _logOut(); // Call the logOut function
+              },
+            ),
+          ],
+        ),
       ),
       body: Center(
         child: Column(
