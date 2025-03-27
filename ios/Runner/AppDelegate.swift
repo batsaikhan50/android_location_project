@@ -19,7 +19,7 @@ import BackgroundTasks
         locationManager = CLLocationManager()
         locationManager?.delegate = self
         locationManager?.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager?.distanceFilter = 2  // meters
+        locationManager?.distanceFilter = 10  // meters
         locationManager?.allowsBackgroundLocationUpdates = true  // Enable background updates
         locationManager?.showsBackgroundLocationIndicator = true
 
