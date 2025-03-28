@@ -44,17 +44,12 @@ class _MyHomePageState extends State<MyHomePage> {
   static const String xToken =
       'gFRat7oK3STU47bWLCgbjj58rRvz0TcabW54H19mjF5Jv3ry7vzmhBxOVGRW8IhF'; // Your X-Token
 
-  static const tokenChannel = MethodChannel(
-    'com.example.new_project_location/token',
-  );
-
   @override
   void initState() {
     super.initState();
-
     // Listen for updates from the native side
     platform.setMethodCallHandler(_methodCallHandler);
-    tokenChannel.setMethodCallHandler(_methodCallHandlerToken);
+    _sendXTokenToAppDelegate();
   }
 
   Future<void> _methodCallHandler(MethodCall call) async {
@@ -72,12 +67,15 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<String> _methodCallHandlerToken(MethodCall call) async {
-    if (call.method == 'getToken') {
-      // Return the token as a constant from the Flutter code
-      return xToken;
+  Future<void> _sendXTokenToAppDelegate() async {
+    try {
+      // Sending the xToken to AppDelegate
+      await platform.invokeMethod('sendXTokenToAppDelegate', {
+        'xToken': xToken,
+      });
+    } on PlatformException catch (e) {
+      print("Failed to send xToken to AppDelegate: '${e.message}'.");
     }
-    return '';
   }
 
   // Add the new location to the history (keep the last 9 locations)

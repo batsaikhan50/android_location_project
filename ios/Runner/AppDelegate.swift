@@ -8,6 +8,7 @@ import BackgroundTasks
 @objc class AppDelegate: FlutterAppDelegate, CLLocationManagerDelegate {
     var locationManager: CLLocationManager?
     var flutterChannel: FlutterMethodChannel?
+    var xToken: String?
 
     override func application(
         _ application: UIApplication,
@@ -41,6 +42,12 @@ import BackgroundTasks
             } else if call.method == "startLocationManagerAfterLogin" {
                 self?.startLocationManagerAfterLogin()  // Ensure this line is added
                 result(nil)  // You can send a response if needed
+            } else if call.method == "sendXTokenToAppDelegate" {
+                if let args = call.arguments as? [String: Any], let token = args["xToken"] as? String {
+                    self?.xToken = token
+                    print("Received xToken: \(self?.xToken ?? "No token")")
+                }
+                result(nil) // Respond back to Flutter
             } else {
                 result(FlutterMethodNotImplemented)
             }
@@ -142,15 +149,24 @@ import BackgroundTasks
 
     // Function to send location to API
     private func sendLocationToAPI(location: CLLocation) {
+
+        guard let token = xToken else {
+            NSLog("Error: xToken not available")
+            return
+        }
+
         // Prepare the URL and request
         guard let url = URL(string: "https://runner-api-v2.medsoft.care/api/gateway/location") else {
             NSLog("Invalid URL")
             return
         }
 
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.addValue("gFRat7oK3STU47bWLCgbjj58rRvz0TcabW54H19mjF5Jv3ry7vzmhBxOVGRW8IhF", forHTTPHeaderField: "X-Token")
+
+        request.addValue(token, forHTTPHeaderField: "X-Token")
+        // request.addValue("gFRat7oK3STU47bWLCgbjj58rRvz0TcabW54H19mjF5Jv3ry7vzmhBxOVGRW8IhF", forHTTPHeaderField: "X-Token")
         request.addValue("ui.medsoft.care", forHTTPHeaderField: "X-Server")
         request.addValue("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYXlhcmtodXUiLCJpYXQiOjE3NDMwNzIwOTgsImV4cCI6MTc0MzE1ODQ5OH0.iQpO6YlLpxTUSPlT50y7P5ZNotCLGyvK0S5_qwo8IfM", forHTTPHeaderField: "X-Medsoft-Token")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
