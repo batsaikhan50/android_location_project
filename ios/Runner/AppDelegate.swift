@@ -9,6 +9,7 @@ import BackgroundTasks
     var locationManager: CLLocationManager?
     var flutterChannel: FlutterMethodChannel?
     var xToken: String?
+    var xMedsoftToken: String?
 
     override func application(
         _ application: UIApplication,
@@ -41,13 +42,22 @@ import BackgroundTasks
                 }
             } else if call.method == "startLocationManagerAfterLogin" {
                 self?.startLocationManagerAfterLogin()  // Ensure this line is added
-                result(nil)  // You can send a response if needed
+                 result(nil)  // You can send a response if needed
             } else if call.method == "sendXTokenToAppDelegate" {
                 if let args = call.arguments as? [String: Any], let token = args["xToken"] as? String {
                     self?.xToken = token
                     print("Received xToken: \(self?.xToken ?? "No token")")
                 }
-                result(nil) // Respond back to Flutter
+                 result(nil) // Respond back to Flutter
+            } else if call.method == "sendXMedsoftTokenToAppDelegate" {
+                if let args = call.arguments as? [String: Any], let medsoftToken = args["xMedsoftToken"] as? String {
+                    self?.xMedsoftToken = medsoftToken
+                    print("Received xMedsoftToken: \(self?.xMedsoftToken ?? "No token")")
+                }
+                 result(nil)
+            } else if call.method == "stopLocationUpdates" {
+                self?.stopLocationUpdates()  // Stop location updates and background tasks
+                 result(nil)  // Respond back to Flutter
             } else {
                 result(FlutterMethodNotImplemented)
             }
@@ -155,6 +165,12 @@ import BackgroundTasks
             return
         }
 
+        guard let medsoftToken = xMedsoftToken else {
+            NSLog("Error: xMedsoftToken not available")
+            return
+        }
+
+
         // Prepare the URL and request
         guard let url = URL(string: "https://runner-api-v2.medsoft.care/api/gateway/location") else {
             NSLog("Invalid URL")
@@ -168,7 +184,7 @@ import BackgroundTasks
         request.addValue(token, forHTTPHeaderField: "X-Token")
         // request.addValue("gFRat7oK3STU47bWLCgbjj58rRvz0TcabW54H19mjF5Jv3ry7vzmhBxOVGRW8IhF", forHTTPHeaderField: "X-Token")
         request.addValue("ui.medsoft.care", forHTTPHeaderField: "X-Server")
-        request.addValue("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYXlhcmtodXUiLCJpYXQiOjE3NDMwNzIwOTgsImV4cCI6MTc0MzE1ODQ5OH0.iQpO6YlLpxTUSPlT50y7P5ZNotCLGyvK0S5_qwo8IfM", forHTTPHeaderField: "X-Medsoft-Token")
+        request.addValue(medsoftToken, forHTTPHeaderField: "X-Medsoft-Token")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
         // Prepare the request body with location data
@@ -200,8 +216,16 @@ import BackgroundTasks
                 if response.statusCode == 200 {
                     NSLog("Successfully sent location data.")
                 } else {
-                    if let data = data, let responseString = String(data: data, encoding: .utf8) {
-                        NSLog("Error response: \(responseString)")
+                    NSLog("response.statusCode: \(response.statusCode)")
+                    // If the status code is 401 or 403, clear SharedPreferences and navigate to LoginScreen
+                    if response.statusCode == 401 || response.statusCode == 403 || response.statusCode == 400 {
+                        DispatchQueue.main.async {
+                            self.clearSharedPreferencesAndNavigateToLogin()
+                        }
+                    } else {
+                        if let data = data, let responseString = String(data: data, encoding: .utf8) {
+                            NSLog("Error response: \(responseString)")
+                        }
                     }
                 }
             }
@@ -243,4 +267,27 @@ import BackgroundTasks
         locationManager?.showsBackgroundLocationIndicator = true
         locationManager?.requestWhenInUseAuthorization()
     }
+
+    // Stop location updates and cancel background tasks
+    func stopLocationUpdates() {
+        // Stop location updates
+        locationManager?.stopUpdatingLocation()
+        locationManager?.delegate = nil  // Remove the delegate to avoid any further updates
+        NSLog("Location updates stopped.")
+        
+        // Cancel background tasks
+        stopBackgroundTasks()
+    }
+
+    func stopBackgroundTasks() {
+        BGTaskScheduler.shared.cancelAllTaskRequests()
+        NSLog("Background tasks canceled.")
+    }
+    
+    private func clearSharedPreferencesAndNavigateToLogin() {
+        NSLog("clearSharedPreferencesAndNavigateToLogin")
+        // Send method to Flutter side to navigate to LoginScreen
+        flutterChannel?.invokeMethod("navigateToLogin", arguments: nil)   
+    }
+
 }

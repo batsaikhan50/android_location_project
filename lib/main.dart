@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:new_project_location/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'login.dart'; // Import login.dart file
 
@@ -41,8 +42,7 @@ class _MyHomePageState extends State<MyHomePage> {
     'com.example.new_project_location/location',
   );
 
-  static const String xToken =
-      'gFRat7oK3STU47bWLCgbjj58rRvz0TcabW54H19mjF5Jv3ry7vzmhBxOVGRW8IhF'; // Your X-Token
+  static const String xToken = Constants.xToken; // Your X-Token
 
   @override
   void initState() {
@@ -64,6 +64,8 @@ class _MyHomePageState extends State<MyHomePage> {
             "Live Location - Latitude: $latitude, Longitude: $longitude";
         _addLocationToHistory(latitude, longitude);
       });
+    } else if (call.method == 'navigateToLogin') {
+      _logOut();
     }
   }
 
@@ -94,9 +96,22 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Log out method
   void _logOut() async {
+    print("Entered _logOut");
     // Clear the shared preferences
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('isLoggedIn'); // Remove the login status key
+    await prefs.remove('X-Server');
+    await prefs.remove('X-Medsoft-Token');
+    await prefs.remove('Username');
+
+    // Stop location updates and cancel background tasks in AppDelegate
+    try {
+      await platform.invokeMethod(
+        'stopLocationUpdates',
+      ); // Request to stop location updates and cancel background tasks
+    } on PlatformException catch (e) {
+      print("Failed to stop location updates: '${e.message}'.");
+    }
 
     // Navigate back to the login screen after logging out
     Navigator.pushReplacement(
