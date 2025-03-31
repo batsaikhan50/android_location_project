@@ -30,6 +30,8 @@ class MyApp extends StatelessWidget {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
+          } else {
+            return const LoginScreen();
           }
 
           // If an error occurs while checking the login status, show an error screen
