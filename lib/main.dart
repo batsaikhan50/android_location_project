@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:new_project_location/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'login.dart'; // Import login.dart file
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 void main() {
   runApp(
@@ -20,8 +21,56 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const LoginScreen(), // This should refer to your LoginScreen widget
+      // home: LoginScreen(),
+      home: FutureBuilder<Widget>(
+        future: _getInitialScreen(),
+        builder: (context, snapshot) {
+          // While checking the login status, show a loading spinner
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          // If an error occurs while checking the login status, show an error screen
+          if (snapshot.hasError) {
+            return const Scaffold(
+              body: Center(child: Text("Error checking login status")),
+            );
+          }
+
+          // If user is logged in, navigate to MyHomePage; otherwise, show LoginScreen
+          // if (snapshot.data == true) {
+          //   return const MyHomePage(title: 'Flutter Demo Home Page');
+          // } else {
+          //   return const LoginScreen();
+          // }
+        },
+      ),
     );
+  }
+
+  // Method to check the login status from SharedPreferences
+  Future<Widget> _getInitialScreen() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    String? xServer = prefs.getString('X-Server');
+    bool isGotToken = xServer != null && xServer.isNotEmpty;
+
+    String? xMedsoftServer = prefs.getString('X-Medsoft-Server');
+    bool isGotMedsoftToken =
+        xMedsoftServer != null && xMedsoftServer.isNotEmpty;
+
+    String? username = prefs.getString('Username');
+    bool isGotUsername = username != null && username.isNotEmpty;
+
+    // If logged in, and all required data is available, show the home page
+    if (isLoggedIn && isGotToken && isGotMedsoftToken && isGotUsername) {
+      return const MyHomePage(title: 'Flutter Demo Home Page');
+    } else {
+      return const LoginScreen();
+    }
   }
 }
 
@@ -35,21 +84,92 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  late String _displayText = '';
   String _liveLocation = "Fetching live location...";
   final List<String> _locationHistory = [];
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
   static const platform = MethodChannel(
     'com.example.new_project_location/location',
   );
 
   static const String xToken = Constants.xToken; // Your X-Token
+  Map<String, String> sharedPreferencesData = {};
 
   @override
   void initState() {
     super.initState();
+    _initializeNotifications();
     // Listen for updates from the native side
     platform.setMethodCallHandler(_methodCallHandler);
     _sendXTokenToAppDelegate();
+    _loadSharedPreferencesData();
+    _getInitialScreenString();
+  }
+
+  Future<void> _getInitialScreenString() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    String? xServer = prefs.getString('X-Server');
+    bool isGotToken = xServer != null && xServer.isNotEmpty;
+
+    String? xMedsoftServer = prefs.getString('X-Medsoft-Token');
+    bool isGotMedsoftToken =
+        xMedsoftServer != null && xMedsoftServer.isNotEmpty;
+
+    String? username = prefs.getString('Username');
+    bool isGotUsername = username != null && username.isNotEmpty;
+
+    _displayText =
+        'isLoggedIn: $isLoggedIn, isGotToken: $isGotToken, isGotMedsoftToken: $isGotMedsoftToken, isGotUsername: $isGotUsername';
+
+    // If logged in, and all required data is available, show the home page
+    if (isLoggedIn && isGotToken && isGotMedsoftToken && isGotUsername) {
+      print(
+        'isLoggedIn: $isLoggedIn, isGotToken: $isGotToken, isGotMedsoftToken: $isGotMedsoftToken, isGotUsername: $isGotUsername',
+      );
+    } else {
+      return print("empty shared");
+    }
+  }
+
+  // Load SharedPreferences data and store it in sharedPreferencesData
+  Future<void> _loadSharedPreferencesData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    Map<String, String> data = {};
+
+    // Fetching all keys and values in SharedPreferences
+    Set<String> allKeys = prefs.getKeys();
+    for (String key in allKeys) {
+      data[key] = prefs.getString(key) ?? 'null'; // Store key-value pairs
+    }
+
+    setState(() {
+      sharedPreferencesData = data; // Update state with SharedPreferences data
+    });
+  }
+
+  // Initialize notifications
+  void _initializeNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('app_icon'); // Add your app icon
+
+    const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+          requestAlertPermission: true, // Request permission for alerts
+          requestBadgePermission: true, // Request permission for badges
+          requestSoundPermission: true, // Request permission for sounds
+        );
+
+    final InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsIOS,
+        );
+
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   }
 
   Future<void> _methodCallHandler(MethodCall call) async {
@@ -66,6 +186,46 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     } else if (call.method == 'navigateToLogin') {
       _logOut();
+      _showNotification();
+    }
+  }
+
+  // Method to show notification
+  Future<void> _showNotification() async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'your_channel_id',
+          'your_channel_name',
+          channelDescription: 'Your channel description',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: false,
+        );
+
+    const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+        DarwinNotificationDetails(
+          badgeNumber: 1, // Set the badge count to 1, or any other number
+        );
+
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: iOSPlatformChannelSpecifics,
+    );
+
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      'Logged Out',
+      'You have been logged out, please log in again.',
+      platformChannelSpecifics,
+      payload: 'item x',
+    );
+  }
+
+  Future<void> _sendLocationByButton() async {
+    try {
+      await platform.invokeMethod('sendLocationToAPIByButton');
+    } on PlatformException catch (e) {
+      print("Failed to send xToken to AppDelegate: '${e.message}'.");
     }
   }
 
@@ -118,8 +278,10 @@ class _MyHomePageState extends State<MyHomePage> {
       context,
       MaterialPageRoute(
         builder:
-            (context) =>
-                const LoginScreen(), // Navigate directly to LoginScreen
+            (context) => LoginScreen(
+              // flutterLocalNotificationsPlugin:
+              //     FlutterLocalNotificationsPlugin(),
+            ), // Navigate directly to LoginScreen
       ),
     );
   }
@@ -165,6 +327,12 @@ class _MyHomePageState extends State<MyHomePage> {
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 20),
+            ElevatedButton(
+              onPressed:
+                  _sendLocationByButton, // Add your method to handle button press
+              child: Text('Send Location to API'),
+            ),
+            SizedBox(height: 20),
             // Display a list of background locations
             Text(
               'Background Location History:',
@@ -176,6 +344,33 @@ class _MyHomePageState extends State<MyHomePage> {
                 itemCount: _locationHistory.length,
                 itemBuilder: (context, index) {
                   return ListTile(title: Text(_locationHistory[index]));
+                },
+              ),
+            ),
+
+            const Divider(),
+            // Display all SharedPreferences keys and values at the bottom
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                _displayText,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: sharedPreferencesData.length,
+                itemBuilder: (context, index) {
+                  String key = sharedPreferencesData.keys.elementAt(index);
+                  String value = sharedPreferencesData[key]!;
+                  return ListTile(
+                    title: Text(
+                      '$key: $value',
+                      style: TextStyle(
+                        color: Colors.black,
+                      ), // Make the text black
+                    ),
+                  );
                 },
               ),
             ),

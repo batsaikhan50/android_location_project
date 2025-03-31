@@ -2,13 +2,15 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:new_project_location/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'main.dart'; // Import the home page
+import 'package:flutter_app_badger/flutter_app_badger.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key}); // Modify constructor
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -23,11 +25,40 @@ class _LoginScreenState extends State<LoginScreen> {
   String _selectedRole = ''; // Empty by default (No selection)
 
   List<String> _serverNames = []; // List to hold server names
+  Map<String, String> sharedPreferencesData = {};
 
   // Define the platform method channel here
   static const platform = MethodChannel(
     'com.example.new_project_location/location',
   );
+
+  late String _displayText = '';
+  Future<void> _getInitialScreenString() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    String? xServer = prefs.getString('X-Server');
+    bool isGotToken = xServer != null && xServer.isNotEmpty;
+
+    String? xMedsoftServer = prefs.getString('X-Medsoft-Token');
+    bool isGotMedsoftToken =
+        xMedsoftServer != null && xMedsoftServer.isNotEmpty;
+
+    String? username = prefs.getString('Username');
+    bool isGotUsername = username != null && username.isNotEmpty;
+
+    _displayText =
+        'isLoggedIn: $isLoggedIn, isGotToken: $isGotToken, isGotMedsoftToken: $isGotMedsoftToken, isGotUsername: $isGotUsername';
+
+    // If logged in, and all required data is available, show the home page
+    if (isLoggedIn && isGotToken && isGotMedsoftToken && isGotUsername) {
+      print(
+        'isLoggedIn: $isLoggedIn, isGotToken: $isGotToken, isGotMedsoftToken: $isGotMedsoftToken, isGotUsername: $isGotUsername',
+      );
+    } else {
+      return print("empty shared");
+    }
+  }
 
   // Fetch server data from API
   Future<void> _fetchServerData() async {
@@ -67,6 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     _fetchServerData(); // Fetch server names when the screen is initialized
+    _getInitialScreenString();
   }
 
   // Simulate the login process with POST request to the login API
@@ -130,8 +162,11 @@ class _LoginScreenState extends State<LoginScreen> {
           debugPrint('X-Medsoft-Token: ${prefs.getString('X-Medsoft-Token')}');
           debugPrint('Username: ${prefs.getString('Username')}');
 
+          await FlutterAppBadger.updateBadgeCount(0);
+
           // Trigger native code to start location manager after successful login
           await _sendXMedsoftTokenToAppDelegate(token);
+          _loadSharedPreferencesData();
 
           // Trigger native code to start location manager after successful login
           try {
@@ -170,6 +205,22 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  // Load SharedPreferences data and store it in sharedPreferencesData
+  Future<void> _loadSharedPreferencesData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    Map<String, String> data = {};
+
+    // Fetching all keys and values in SharedPreferences
+    Set<String> allKeys = prefs.getKeys();
+    for (String key in allKeys) {
+      data[key] = prefs.getString(key) ?? 'null'; // Store key-value pairs
+    }
+
+    setState(() {
+      sharedPreferencesData = data; // Update state with SharedPreferences data
+    });
   }
 
   Future<void> _sendXMedsoftTokenToAppDelegate(String xMedsoftToken) async {
@@ -230,6 +281,33 @@ class _LoginScreenState extends State<LoginScreen> {
                   _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text('Login'),
+            ),
+
+            const Divider(),
+            // Display all SharedPreferences keys and values at the bottom
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                _displayText,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: sharedPreferencesData.length,
+                itemBuilder: (context, index) {
+                  String key = sharedPreferencesData.keys.elementAt(index);
+                  String value = sharedPreferencesData[key]!;
+                  return ListTile(
+                    title: Text(
+                      '$key: $value',
+                      style: TextStyle(
+                        color: Colors.black,
+                      ), // Make the text black
+                    ),
+                  );
+                },
+              ),
             ),
           ],
         ),

@@ -10,6 +10,7 @@ import BackgroundTasks
     var flutterChannel: FlutterMethodChannel?
     var xToken: String?
     var xMedsoftToken: String?
+    // Declare counter variable
 
     override func application(
         _ application: UIApplication,
@@ -33,13 +34,8 @@ import BackgroundTasks
         flutterChannel?.setMethodCallHandler { [weak self] (call, result) in
             if call.method == "getLastLocation" {
                 self?.getLastLocation(result: result)
-            } else if call.method == "sendLocationToAPI" {
-                if let args = call.arguments as? [String: Any],
-                let latitude = args["latitude"] as? Double,
-                let longitude = args["longitude"] as? Double {
-                    let location = CLLocation(latitude: latitude, longitude: longitude)
-                    self?.sendLocationToAPI(location: location)
-                }
+            } else if call.method == "sendLocationToAPIByButton" {
+                self?.sendLocationToAPIByButton(result: result)
             } else if call.method == "startLocationManagerAfterLogin" {
                 self?.startLocationManagerAfterLogin()  // Ensure this line is added
                  result(nil)  // You can send a response if needed
@@ -129,6 +125,20 @@ import BackgroundTasks
         NSLog("Failed to find user's location: \(error.localizedDescription)")
     }
 
+    @objc func sendLocationToAPIByButton(result: @escaping FlutterResult) {
+        // Ensure locationManager is set up
+        guard let location = locationManager?.location else {
+            result(FlutterError(code: "LOCATION_ERROR", message: "Location not available", details: nil))
+            return
+        }
+
+        // Call the existing method to send location to API
+        sendLocationToAPI(location: location)
+        NSLog("button sent success")
+        // Optionally, return a success response if needed
+        result(nil)
+    }
+
     // CLLocationManagerDelegate method to handle authorization changes
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         let status = manager.authorizationStatus
@@ -159,7 +169,6 @@ import BackgroundTasks
 
     // Function to send location to API
     private func sendLocationToAPI(location: CLLocation) {
-
         guard let token = xToken else {
             NSLog("Error: xToken not available")
             return
@@ -180,7 +189,6 @@ import BackgroundTasks
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-
         request.addValue(token, forHTTPHeaderField: "X-Token")
         // request.addValue("gFRat7oK3STU47bWLCgbjj58rRvz0TcabW54H19mjF5Jv3ry7vzmhBxOVGRW8IhF", forHTTPHeaderField: "X-Token")
         request.addValue("ui.medsoft.care", forHTTPHeaderField: "X-Server")
