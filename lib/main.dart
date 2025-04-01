@@ -67,7 +67,7 @@ class MyApp extends StatelessWidget {
     // Check if the user is properly logged in with all necessary tokens
     if (isLoggedIn && isGotToken && isGotMedsoftToken && isGotUsername) {
       return const MyHomePage(
-        title: '103 Location Tracking',
+        title: 'Tracking Location...',
       ); // User is logged in
     } else {
       return const LoginScreen(); // User is not logged in, return login screen
@@ -316,8 +316,11 @@ class _MyHomePageState extends State<MyHomePage> {
             const DrawerHeader(
               decoration: BoxDecoration(color: Colors.deepPurple),
               child: Text(
-                'Welcome',
-                style: TextStyle(color: Colors.white, fontSize: 24),
+                'Medsoft',
+                style: TextStyle(
+                  color: Color.fromARGB(255, 40, 15, 15),
+                  fontSize: 24,
+                ),
               ),
             ),
             // Display username in the drawer

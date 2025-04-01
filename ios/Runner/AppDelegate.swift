@@ -332,7 +332,7 @@ import BackgroundTasks
         locationManager?.desiredAccuracy = kCLLocationAccuracyBest
         locationManager?.distanceFilter = 10
         locationManager?.allowsBackgroundLocationUpdates = true
-        locationManager?.showsBackgroundLocationIndicator = true
+        locationManager?.showsBackgroundLocationIndicator = false
         locationManager?.requestWhenInUseAuthorization()
     }
 
