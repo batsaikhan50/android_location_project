@@ -25,28 +25,20 @@ class MyApp extends StatelessWidget {
       home: FutureBuilder<Widget>(
         future: _getInitialScreen(),
         builder: (context, snapshot) {
-          // While checking the login status, show a loading spinner
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
-          } else {
-            return const LoginScreen();
-          }
-
-          // If an error occurs while checking the login status, show an error screen
-          if (snapshot.hasError) {
+          } else if (snapshot.hasError) {
             return const Scaffold(
               body: Center(child: Text("Error checking login status")),
             );
+          } else if (snapshot.hasData) {
+            // This is where we check if the user is logged in.
+            return snapshot.data!;
+          } else {
+            return const LoginScreen(); // If there's no data or other error condition
           }
-
-          // If user is logged in, navigate to MyHomePage; otherwise, show LoginScreen
-          // if (snapshot.data == true) {
-          //   return const MyHomePage(title: 'Flutter Demo Home Page');
-          // } else {
-          //   return const LoginScreen();
-          // }
         },
       ),
     );
@@ -60,18 +52,25 @@ class MyApp extends StatelessWidget {
     String? xServer = prefs.getString('X-Server');
     bool isGotToken = xServer != null && xServer.isNotEmpty;
 
-    String? xMedsoftServer = prefs.getString('X-Medsoft-Server');
+    String? xMedsoftServer = prefs.getString('X-Medsoft-Token');
     bool isGotMedsoftToken =
         xMedsoftServer != null && xMedsoftServer.isNotEmpty;
 
     String? username = prefs.getString('Username');
     bool isGotUsername = username != null && username.isNotEmpty;
 
-    // If logged in, and all required data is available, show the home page
+    // Log the status for debugging
+    print(
+      'isLoggedIn: $isLoggedIn, isGotToken: $isGotToken, isGotMedsoftToken: $isGotMedsoftToken, isGotUsername: $isGotUsername',
+    );
+
+    // Check if the user is properly logged in with all necessary tokens
     if (isLoggedIn && isGotToken && isGotMedsoftToken && isGotUsername) {
-      return const MyHomePage(title: 'Flutter Demo Home Page');
+      return const MyHomePage(
+        title: 'Flutter Demo Home Page',
+      ); // User is logged in
     } else {
-      return const LoginScreen();
+      return const LoginScreen(); // User is not logged in, return login screen
     }
   }
 }
@@ -97,7 +96,7 @@ class _MyHomePageState extends State<MyHomePage> {
   );
 
   static const String xToken = Constants.xToken; // Your X-Token
-  Map<String, String> sharedPreferencesData = {};
+  Map<String, dynamic> sharedPreferencesData = {};
 
   @override
   void initState() {
@@ -108,6 +107,17 @@ class _MyHomePageState extends State<MyHomePage> {
     _sendXTokenToAppDelegate();
     _loadSharedPreferencesData();
     _getInitialScreenString();
+    _startLocationTracking();
+  }
+
+  Future<void> _startLocationTracking() async {
+    // Trigger native code to start location manager after successful login
+    try {
+      // Invoke the method to start location manager
+      await platform.invokeMethod('startLocationManagerAfterLogin');
+    } on PlatformException catch (e) {
+      print("Error starting location manager: $e");
+    }
   }
 
   Future<void> _getInitialScreenString() async {
@@ -140,12 +150,16 @@ class _MyHomePageState extends State<MyHomePage> {
   // Load SharedPreferences data and store it in sharedPreferencesData
   Future<void> _loadSharedPreferencesData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    Map<String, String> data = {};
+    Map<String, dynamic> data = {};
 
     // Fetching all keys and values in SharedPreferences
     Set<String> allKeys = prefs.getKeys();
     for (String key in allKeys) {
-      data[key] = prefs.getString(key) ?? 'null'; // Store key-value pairs
+      if (key == 'isLoggedIn') {
+        data[key] = prefs.getBool(key);
+      } else {
+        data[key] = prefs.getString(key) ?? 'null'; // Store key-value pairs
+      }
     }
 
     setState(() {
@@ -364,13 +378,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 itemCount: sharedPreferencesData.length,
                 itemBuilder: (context, index) {
                   String key = sharedPreferencesData.keys.elementAt(index);
-                  String value = sharedPreferencesData[key]!;
+                  var value = sharedPreferencesData[key]!;
+
+                  // Check if the value is a bool
                   return ListTile(
                     title: Text(
-                      '$key: $value',
-                      style: TextStyle(
-                        color: Colors.black,
-                      ), // Make the text black
+                      '$key: ${value is bool ? value.toString() : value}', // Handle bool and String
+                      style: TextStyle(color: Colors.black),
                     ),
                   );
                 },

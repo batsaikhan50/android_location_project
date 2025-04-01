@@ -168,14 +168,6 @@ class _LoginScreenState extends State<LoginScreen> {
           await _sendXMedsoftTokenToAppDelegate(token);
           _loadSharedPreferencesData();
 
-          // Trigger native code to start location manager after successful login
-          try {
-            // Invoke the method to start location manager
-            await platform.invokeMethod('startLocationManagerAfterLogin');
-          } on PlatformException catch (e) {
-            print("Error starting location manager: $e");
-          }
-
           // Navigate to the home page after successful login
           Navigator.pushReplacement(
             context,
