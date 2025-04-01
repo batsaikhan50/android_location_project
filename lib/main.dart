@@ -2,15 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:new_project_location/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'login.dart'; // Import login.dart file
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+import 'login.dart';
 
 void main() {
-  runApp(
-    const MyApp(),
-  ); // Ensure the 'main' method is defined and starts the app
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -23,7 +22,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      // home: LoginScreen(),
+
       home: FutureBuilder<Widget>(
         future: _getInitialScreen(),
         builder: (context, snapshot) {
@@ -36,17 +35,15 @@ class MyApp extends StatelessWidget {
               body: Center(child: Text("Error checking login status")),
             );
           } else if (snapshot.hasData) {
-            // This is where we check if the user is logged in.
             return snapshot.data!;
           } else {
-            return const LoginScreen(); // If there's no data or other error condition
+            return const LoginScreen();
           }
         },
       ),
     );
   }
 
-  // Method to check the login status from SharedPreferences
   Future<Widget> _getInitialScreen() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
@@ -61,16 +58,10 @@ class MyApp extends StatelessWidget {
     String? username = prefs.getString('Username');
     bool isGotUsername = username != null && username.isNotEmpty;
 
-    // Log the status for debugging
-    print(
-      'isLoggedIn: $isLoggedIn, isGotToken: $isGotToken, isGotMedsoftToken: $isGotMedsoftToken, isGotUsername: $isGotUsername',
-    );
-
-    // Check if the user is properly logged in with all necessary tokens
     if (isLoggedIn && isGotToken && isGotMedsoftToken && isGotUsername) {
-      return const MyHomePage(title: 'Tracking Location'); // User is logged in
+      return const MyHomePage(title: 'Байршил тогтоогч');
     } else {
-      return const LoginScreen(); // User is not logged in, return login screen
+      return const LoginScreen();
     }
   }
 }
@@ -90,34 +81,44 @@ class _MyHomePageState extends State<MyHomePage> {
   final List<String> _locationHistory = [];
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
-  String? username; // Store username here
+  String? username;
 
   static const platform = MethodChannel(
     'com.example.new_project_location/location',
   );
 
-  static const String xToken = Constants.xToken; // Your X-Token
+  static const String xToken = Constants.xToken;
   Map<String, dynamic> sharedPreferencesData = {};
 
   @override
   void initState() {
     super.initState();
     _initializeNotifications();
-    // Listen for updates from the native side
+
     platform.setMethodCallHandler(_methodCallHandler);
     _sendXTokenToAppDelegate();
     _loadSharedPreferencesData();
-    _getInitialScreenString();
+    _sendXMedsoftTokenToAppDelegate();
     _startLocationTracking();
   }
 
   Future<void> _startLocationTracking() async {
-    // Trigger native code to start location manager after successful login
     try {
-      // Invoke the method to start location manager
       await platform.invokeMethod('startLocationManagerAfterLogin');
     } on PlatformException catch (e) {
-      print("Error starting location manager: $e");
+      debugPrint("Error starting location manager: $e");
+    }
+  }
+
+  Future<void> _sendXMedsoftTokenToAppDelegate() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    try {
+      await platform.invokeMethod('sendXMedsoftTokenToAppDelegate', {
+        'xMedsoftToken': prefs.getString('X-Medsoft-Token'),
+      });
+    } on PlatformException catch (e) {
+      debugPrint("Failed to send xToken to AppDelegate: '${e.message}'.");
     }
   }
 
@@ -138,48 +139,43 @@ class _MyHomePageState extends State<MyHomePage> {
     _displayText =
         'isLoggedIn: $isLoggedIn, isGotToken: $isGotToken, isGotMedsoftToken: $isGotMedsoftToken, isGotUsername: $isGotUsername';
 
-    // If logged in, and all required data is available, show the home page
     if (isLoggedIn && isGotToken && isGotMedsoftToken && isGotUsername) {
-      print(
+      debugPrint(
         'isLoggedIn: $isLoggedIn, isGotToken: $isGotToken, isGotMedsoftToken: $isGotMedsoftToken, isGotUsername: $isGotUsername',
       );
     } else {
-      return print("empty shared");
+      return debugPrint("empty shared");
     }
   }
 
-  // Load SharedPreferences data and store it in sharedPreferencesData
   Future<void> _loadSharedPreferencesData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     Map<String, dynamic> data = {};
 
-    // Fetching all keys and values in SharedPreferences
     Set<String> allKeys = prefs.getKeys();
     for (String key in allKeys) {
       if (key == 'isLoggedIn') {
         data[key] = prefs.getBool(key);
       } else {
-        data[key] = prefs.getString(key) ?? 'null'; // Store key-value pairs
+        data[key] = prefs.getString(key) ?? 'null';
       }
     }
 
-    // Retrieve the username and store it in the username variable
     setState(() {
       username = prefs.getString('Username');
-      sharedPreferencesData = data; // Update state with SharedPreferences data
+      sharedPreferencesData = data;
     });
   }
 
-  // Initialize notifications
   void _initializeNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('app_icon'); // Add your app icon
+        AndroidInitializationSettings('app_icon');
 
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
-          requestAlertPermission: true, // Request permission for alerts
-          requestBadgePermission: true, // Request permission for badges
-          requestSoundPermission: true, // Request permission for sounds
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
         );
 
     final InitializationSettings initializationSettings =
@@ -197,10 +193,9 @@ class _MyHomePageState extends State<MyHomePage> {
       final latitude = locationData['latitude'];
       final longitude = locationData['longitude'];
 
-      // Update the live location text
       setState(() {
         _liveLocation =
-            "Live Location - Latitude: $latitude, Longitude: $longitude";
+            "Сүүлд илгээсэн байршил\nУртраг: $longitude\nӨргөрөг: $latitude";
         _addLocationToHistory(latitude, longitude);
       });
     } else if (call.method == 'navigateToLogin') {
@@ -209,7 +204,6 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  // Method to show notification
   Future<void> _showNotification() async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
@@ -222,9 +216,7 @@ class _MyHomePageState extends State<MyHomePage> {
         );
 
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
-        DarwinNotificationDetails(
-          badgeNumber: 1, // Set the badge count to 1, or any other number
-        );
+        DarwinNotificationDetails(badgeNumber: 1);
 
     const NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
@@ -233,8 +225,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
     await flutterLocalNotificationsPlugin.show(
       0,
-      'Logged Out',
-      'You have been logged out, please log in again.',
+      'Системээс гарсан байна.',
+      'Ахин нэвтэрнэ үү.',
       platformChannelSpecifics,
       payload: 'item x',
     );
@@ -244,28 +236,25 @@ class _MyHomePageState extends State<MyHomePage> {
     try {
       await platform.invokeMethod('sendLocationToAPIByButton');
     } on PlatformException catch (e) {
-      print("Failed to send xToken to AppDelegate: '${e.message}'.");
+      debugPrint("Failed to send xToken to AppDelegate: '${e.message}'.");
     }
   }
 
   Future<void> _sendXTokenToAppDelegate() async {
     try {
-      // Sending the xToken to AppDelegate
       await platform.invokeMethod('sendXTokenToAppDelegate', {
         'xToken': xToken,
       });
     } on PlatformException catch (e) {
-      print("Failed to send xToken to AppDelegate: '${e.message}'.");
+      debugPrint("Failed to send xToken to AppDelegate: '${e.message}'.");
     }
   }
 
-  // Add the new location to the history (keep the last 9 locations)
   void _addLocationToHistory(double latitude, double longitude) {
-    String newLocation = "Lat: $latitude, Lon: $longitude";
+    String newLocation = "Уртраг: $longitude\nӨргөрөг: $latitude";
 
-    // Ensure we only keep the last 9 locations
     if (_locationHistory.length >= 9) {
-      _locationHistory.removeAt(0); // Remove the oldest
+      _locationHistory.removeAt(0);
     }
 
     setState(() {
@@ -273,35 +262,24 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // Log out method
   void _logOut() async {
-    print("Entered _logOut");
-    // Clear the shared preferences
+    debugPrint("Entered _logOut");
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('isLoggedIn'); // Remove the login status key
+    await prefs.remove('isLoggedIn');
     await prefs.remove('X-Server');
     await prefs.remove('X-Medsoft-Token');
     await prefs.remove('Username');
 
-    // Stop location updates and cancel background tasks in AppDelegate
     try {
-      await platform.invokeMethod(
-        'stopLocationUpdates',
-      ); // Request to stop location updates and cancel background tasks
+      await platform.invokeMethod('stopLocationUpdates');
     } on PlatformException catch (e) {
-      print("Failed to stop location updates: '${e.message}'.");
+      debugPrint("Failed to stop location updates: '${e.message}'.");
     }
 
-    // Navigate back to the login screen after logging out
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder:
-            (context) => LoginScreen(
-              // flutterLocalNotificationsPlugin:
-              //     FlutterLocalNotificationsPlugin(),
-            ), // Navigate directly to LoginScreen
-      ),
+      MaterialPageRoute(builder: (context) => LoginScreen()),
     );
   }
 
@@ -309,55 +287,78 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Color(0xFF00CCCC),
         title: Text(widget.title),
       ),
       drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
+        child: Column(
           children: <Widget>[
             const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.deepPurple),
-              child: Text(
-                'Medsoft',
-                style: TextStyle(
-                  color: Color.fromARGB(255, 40, 15, 15),
-                  fontSize: 24,
+              decoration: BoxDecoration(
+                color: Color.fromARGB(255, 96, 153, 199),
+              ),
+              child: Center(
+                child: Text(
+                  'Medsoft Track',
+                  style: TextStyle(
+                    color: Color.fromARGB(255, 13, 2, 2),
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
-            // Display username in the drawer
-            ListTile(title: Text(username ?? 'Guest')),
-            const Divider(), // Divider for clarity
             ListTile(
-              title: const Text('Log Out'),
-              onTap: () {
-                _logOut(); // Call the logOut function
-              },
+              title: Center(
+                child: Text(
+                  username ?? 'Guest',
+                  style: TextStyle(fontSize: 20),
+                ),
+              ),
             ),
+            const Divider(),
+
+            Spacer(),
+
+            Container(
+              margin: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 217, 83, 96),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: ListTile(
+                title: Center(
+                  child: const Text(
+                    'Гарах',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                onTap: () {
+                  _logOut();
+                },
+              ),
+            ),
+            SizedBox(height: 50),
           ],
         ),
       ),
+
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            // Display live location
             Text(
               _liveLocation,
               style: Theme.of(context).textTheme.bodyLarge,
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed:
-                  _sendLocationByButton, // Add your method to handle button press
-              child: Text('Send Location to API'),
-            ),
-            SizedBox(height: 20),
-            // Display a list of background locations
             Text(
-              'Background Location History:',
+              'Байршлын түүх:',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             SizedBox(height: 10),
@@ -369,33 +370,23 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
               ),
             ),
-
-            const Divider(),
-            // Display all SharedPreferences keys and values at the bottom
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                _displayText,
-                style: Theme.of(context).textTheme.bodyMedium,
+            SizedBox(height: 20),
+            Center(
+              child: ElevatedButton(
+                onPressed: _sendLocationByButton,
+                style: ElevatedButton.styleFrom(minimumSize: Size(200, 60)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.near_me, size: 24, color: Colors.blueAccent),
+                    SizedBox(width: 8),
+                    Text('Байршил илгээх', style: TextStyle(fontSize: 18)),
+                  ],
+                ),
               ),
             ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: sharedPreferencesData.length,
-                itemBuilder: (context, index) {
-                  String key = sharedPreferencesData.keys.elementAt(index);
-                  var value = sharedPreferencesData[key]!;
 
-                  // Check if the value is a bool
-                  return ListTile(
-                    title: Text(
-                      '$key: ${value is bool ? value.toString() : value}', // Handle bool and String
-                      style: TextStyle(color: Colors.black),
-                    ),
-                  );
-                },
-              ),
-            ),
+            SizedBox(height: 200),
           ],
         ),
       ),
