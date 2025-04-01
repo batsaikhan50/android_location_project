@@ -35,7 +35,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _getInitialScreenString() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-
     String? xServer = prefs.getString('X-Server');
     bool isGotToken = xServer != null && xServer.isNotEmpty;
 
@@ -144,20 +143,14 @@ class _LoginScreenState extends State<LoginScreen> {
           await prefs.setString('X-Medsoft-Token', token);
           await prefs.setString('Username', _usernameController.text);
 
-          debugPrint('X-Server: ${prefs.getString('X-Server')}');
-          debugPrint('X-Medsoft-Token: ${prefs.getString('X-Medsoft-Token')}');
-          debugPrint('Username: ${prefs.getString('Username')}');
-
           await FlutterAppBadger.updateBadgeCount(0);
 
-          // await _sendXMedsoftTokenToAppDelegate(token);
           _loadSharedPreferencesData();
 
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) {
-                // You can safely use context here
                 return const MyHomePage(title: 'Байршил тогтоогч');
               },
             ),
@@ -198,61 +191,123 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  // Future<void> _sendXMedsoftTokenToAppDelegate(String xMedsoftToken) async {
-  //   try {
-  //     await platform.invokeMethod('sendXMedsoftTokenToAppDelegate', {
-  //       'xMedsoftToken': xMedsoftToken,
-  //     });
-  //   } on PlatformException catch (e) {
-  //     debugPrint("Failed to send xToken to AppDelegate: '${e.message}'.");
-  //   }
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Нэвтрэх")),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            if (_serverNames.isNotEmpty)
-              DropdownButton<String>(
-                value: _selectedRole.isEmpty ? null : _selectedRole,
-                hint: Text('Эмнэлэг сонгох'),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedRole = newValue!;
-                  });
-                },
-                items:
-                    _serverNames.map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
+        padding: const EdgeInsets.fromLTRB(16.0, 150.0, 16.0, 16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 20),
+              Image.asset(
+                'assets/icon/locationlogo.png',
+                width: 150,
+                height: 150,
               ),
-            TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'Username'),
-            ),
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            if (_errorMessage.isNotEmpty)
-              Text(_errorMessage, style: const TextStyle(color: Colors.red)),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _login,
-              child:
-                  _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Login'),
-            ),
-          ],
+
+              if (_serverNames.isNotEmpty)
+                Container(
+                  height: 56,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Color(0xFF808080),
+                      width: 1.0,
+                      style: BorderStyle.solid,
+                      strokeAlign: -1.0,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.local_hospital, color: Colors.black),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: DropdownButton<String>(
+                          value: _selectedRole.isEmpty ? null : _selectedRole,
+                          hint: const Text('Эмнэлэг сонгох'),
+                          isExpanded: true,
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _selectedRole = newValue!;
+                            });
+                          },
+                          items:
+                              _serverNames.map<DropdownMenuItem<String>>((
+                                String value,
+                              ) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              }).toList(),
+                          underline: const SizedBox.shrink(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 20),
+
+              TextField(
+                controller: _usernameController,
+                decoration: InputDecoration(
+                  labelText: 'Нэвтрэх нэр',
+                  prefixIcon: const Icon(Icons.person),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              TextField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: 'Нууц үг',
+                  prefixIcon: const Icon(Icons.lock),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                obscureText: true,
+              ),
+              const SizedBox(height: 20),
+
+              if (_errorMessage.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Text(
+                    _errorMessage,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF009688),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 0,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  minimumSize: Size(double.infinity, 40),
+                ),
+                onPressed: _isLoading ? null : _login,
+                child:
+                    _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                          'НЭВТРЭХ',
+                          style: TextStyle(fontSize: 15, color: Colors.white),
+                        ),
+              ),
+            ],
+          ),
         ),
       ),
     );

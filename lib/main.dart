@@ -293,18 +293,15 @@ class _MyHomePageState extends State<MyHomePage> {
       drawer: Drawer(
         child: Column(
           children: <Widget>[
-            const DrawerHeader(
+            DrawerHeader(
               decoration: BoxDecoration(
-                color: Color.fromARGB(255, 96, 153, 199),
+                color: Color.fromARGB(255, 236, 169, 175),
               ),
               child: Center(
-                child: Text(
-                  'Medsoft Track',
-                  style: TextStyle(
-                    color: Color.fromARGB(255, 13, 2, 2),
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Image.asset(
+                  'assets/icon/locationlogo.png',
+                  width: 150,
+                  height: 150,
                 ),
               ),
             ),
@@ -317,9 +314,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
             const Divider(),
-
             Spacer(),
-
             Container(
               margin: const EdgeInsets.all(10),
               decoration: BoxDecoration(
