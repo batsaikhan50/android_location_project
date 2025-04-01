@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:new_project_location/constants.dart';
@@ -66,9 +68,7 @@ class MyApp extends StatelessWidget {
 
     // Check if the user is properly logged in with all necessary tokens
     if (isLoggedIn && isGotToken && isGotMedsoftToken && isGotUsername) {
-      return const MyHomePage(
-        title: 'Tracking Location...',
-      ); // User is logged in
+      return const MyHomePage(title: 'Tracking Location'); // User is logged in
     } else {
       return const LoginScreen(); // User is not logged in, return login screen
     }
@@ -90,6 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final List<String> _locationHistory = [];
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  String? username; // Store username here
 
   static const platform = MethodChannel(
     'com.example.new_project_location/location',
@@ -162,7 +163,9 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     }
 
+    // Retrieve the username and store it in the username variable
     setState(() {
+      username = prefs.getString('Username');
       sharedPreferencesData = data; // Update state with SharedPreferences data
     });
   }
@@ -324,7 +327,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
             // Display username in the drawer
-            ListTile(title: Text('Username: to-do')),
+            ListTile(title: Text(username ?? 'Guest')),
             const Divider(), // Divider for clarity
             ListTile(
               title: const Text('Log Out'),
