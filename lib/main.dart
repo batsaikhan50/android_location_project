@@ -67,7 +67,7 @@ class MyApp extends StatelessWidget {
     // Check if the user is properly logged in with all necessary tokens
     if (isLoggedIn && isGotToken && isGotMedsoftToken && isGotUsername) {
       return const MyHomePage(
-        title: 'Flutter Demo Home Page',
+        title: '103 Location Tracking',
       ); // User is logged in
     } else {
       return const LoginScreen(); // User is not logged in, return login screen

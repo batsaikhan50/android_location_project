@@ -147,6 +147,8 @@ import BackgroundTasks
             manager.startUpdatingLocation()
             if status == .authorizedAlways {
                 requestNotificationPermission()
+            } else{
+                showLocationPermissionDialog()
             }
         case .denied, .restricted:
             // Handle denied or restricted cases, e.g., show an alert
@@ -157,6 +159,64 @@ import BackgroundTasks
             break
         @unknown default:
             NSLog("Unknown location authorization status")
+        }
+    }
+
+    func showLocationPermissionDialog() {
+        let alertController = UIAlertController(
+            title: "Location Permission Needed",
+            message: "To provide accurate location updates, we need access to your location always. Would you like to open settings and grant access?",
+            preferredStyle: .alert
+        )
+
+        let containerView = UIStackView()
+        containerView.axis = .vertical
+        containerView.alignment = .center
+        containerView.spacing = 10
+
+        if let image = UIImage(named: "location_permission_image") {
+            let imageView = UIImageView(image: image)
+            imageView.contentMode = .scaleAspectFit
+            containerView.addArrangedSubview(imageView)
+
+            // Add constraints to the imageView
+            imageView.translatesAutoresizingMaskIntoConstraints = false
+            imageView.widthAnchor.constraint(equalToConstant: 261).isActive = true // Adjust width
+            imageView.heightAnchor.constraint(equalToConstant: 261).isActive = true // Adjust height
+        }
+
+        // let messageLabel = UILabel()
+        // messageLabel.text = "To provide accurate location updates, we need access to your location always. Would you like to open settings and grant access?"
+        // messageLabel.numberOfLines = 0
+        // messageLabel.textAlignment = .center
+        // messageLabel.font = UIFont.preferredFont(forTextStyle: .body)
+        // messageLabel.textColor = .black
+        // containerView.addArrangedSubview(messageLabel)
+
+        alertController.view.addSubview(containerView)
+
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        containerView.topAnchor.constraint(equalTo: alertController.view.topAnchor, constant: 120).isActive = true
+        containerView.leadingAnchor.constraint(equalTo: alertController.view.leadingAnchor, constant: 20).isActive = true
+        containerView.trailingAnchor.constraint(equalTo: alertController.view.trailingAnchor, constant: -20).isActive = true
+        containerView.bottomAnchor.constraint(equalTo: alertController.view.bottomAnchor, constant: -50).isActive = true
+
+        let openSettingsAction = UIAlertAction(title: "Yes", style: .default) { _ in
+            if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                if UIApplication.shared.canOpenURL(settingsUrl) {
+                    UIApplication.shared.open(settingsUrl, options: [:], completionHandler: nil)
+                }
+            }
+        }
+        alertController.addAction(openSettingsAction)
+
+        let clearAndLoginAction = UIAlertAction(title: "No", style: .destructive) { _ in
+            self.clearSharedPreferencesAndNavigateToLogin()
+        }
+        alertController.addAction(clearAndLoginAction)
+
+        if let topController = UIApplication.shared.keyWindow?.rootViewController {
+            topController.present(alertController, animated: true, completion: nil)
         }
     }
 
