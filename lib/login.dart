@@ -200,12 +200,22 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 20),
+              // const SizedBox(height: 20),
               Image.asset(
                 'assets/icon/locationlogo.png',
                 width: 150,
                 height: 150,
               ),
+
+              Text(
+                'Тавтай морил',
+                style: TextStyle(
+                  fontSize: 22.4,
+                  color: Color(0xFF009688),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
 
               if (_serverNames.isNotEmpty)
                 Container(
@@ -284,6 +294,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: const TextStyle(color: Colors.red),
                   ),
                 ),
+
+              // 'Нууц үг мартсан?' Label
+              Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: () {
+                    // Handle the forgot password action here
+                    // You can navigate to another screen or show a dialog
+                  },
+                  child: Text(
+                    'Нууц үг мартсан?',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Color(0xFF009688),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
 
               ElevatedButton(
                 style: ElevatedButton.styleFrom(

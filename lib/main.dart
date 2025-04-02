@@ -75,7 +75,7 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   late String _displayText = '';
   String _liveLocation = "Fetching live location...";
   final List<String> _locationHistory = [];
@@ -90,6 +90,11 @@ class _MyHomePageState extends State<MyHomePage> {
   static const String xToken = Constants.xToken;
   Map<String, dynamic> sharedPreferencesData = {};
 
+  late AnimationController _animationController;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _fadeAnimation;
+  bool _isLocationSent = false;
+
   @override
   void initState() {
     super.initState();
@@ -100,6 +105,22 @@ class _MyHomePageState extends State<MyHomePage> {
     _loadSharedPreferencesData();
     _sendXMedsoftTokenToAppDelegate();
     _startLocationTracking();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 500),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: Offset(0, 1),
+      end: Offset(0, 0),
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 0.8).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   Future<void> _startLocationTracking() async {
@@ -235,6 +256,19 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _sendLocationByButton() async {
     try {
       await platform.invokeMethod('sendLocationToAPIByButton');
+
+      setState(() {
+        _isLocationSent = true;
+      });
+
+      _animationController.forward();
+
+      await Future.delayed(Duration(seconds: 2));
+
+      setState(() {
+        _isLocationSent = false;
+      });
+      _animationController.reverse();
     } on PlatformException catch (e) {
       debugPrint("Failed to send xToken to AppDelegate: '${e.message}'.");
     }
@@ -365,7 +399,27 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
               ),
             ),
-            SizedBox(height: 20),
+
+            SizedBox(height: 50),
+
+            AnimatedOpacity(
+              opacity: _isLocationSent ? 1.0 : 0.0,
+              duration: Duration(milliseconds: 500),
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: 20),
+                  child: Text(
+                    'Амжилттай',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
             Center(
               child: ElevatedButton(
                 onPressed: _sendLocationByButton,
@@ -381,7 +435,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
 
-            SizedBox(height: 200),
+            SizedBox(height: 170),
           ],
         ),
       ),
