@@ -132,7 +132,7 @@ import UserNotifications
       manager.startUpdatingLocation()
       if status == .authorizedAlways {
         requestNotificationPermission()
-      } else {
+      } else if status == .authorizedWhenInUse {
         showLocationPermissionDialog()
       }
     case .denied, .restricted:
