@@ -133,7 +133,7 @@ import UserNotifications
       if status == .authorizedAlways {
         requestNotificationPermission()
       } else if status == .authorizedWhenInUse {
-        showLocationPermissionDialog()
+        requestAlwaysLocationPermission();
       }
     case .denied, .restricted:
 
@@ -206,6 +206,9 @@ import UserNotifications
   func requestAlwaysLocationPermission() {
     if CLLocationManager.authorizationStatus() == .authorizedWhenInUse {
       locationManager?.requestAlwaysAuthorization()
+    }
+    if CLLocationManager.authorizationStatus() == .authorizedWhenInUse {
+      showLocationPermissionDialog()
     }
   }
 
