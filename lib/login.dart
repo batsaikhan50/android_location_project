@@ -24,6 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String _errorMessage = '';
   String _selectedRole = '';
+  bool _isPasswordVisible = false;
 
   List<String> _serverNames = [];
   Map<String, String> sharedPreferencesData = {};
@@ -275,14 +276,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
               TextField(
                 controller: _passwordController,
+                obscureText: !_isPasswordVisible, // Use the toggle state
                 decoration: InputDecoration(
                   labelText: 'Нууц үг',
                   prefixIcon: const Icon(Icons.lock),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible =
+                            !_isPasswordVisible; // Toggle visibility
+                      });
+                    },
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                obscureText: true,
               ),
               const SizedBox(height: 20),
 
