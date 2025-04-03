@@ -27,13 +27,13 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSLocationUsageDescription</key>
-	<string>Your app needs access to your location.</string>
+	<string>Ambulance tracking app needs access to your location.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Your app needs access to your location when in use.</string>
+	<string>Ambulance tracking app needs access to your location when in use.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Your app needs access to your location even in the background.</string>
+	<string>Ambulance tracking app needs access to your location even in the background.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Your app needs access to your location at all times.</string>
+	<string>Ambulance tracking app needs access to your location at all times.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
