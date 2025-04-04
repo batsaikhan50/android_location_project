@@ -104,6 +104,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     _sendXTokenToAppDelegate();
     _loadSharedPreferencesData();
     _sendXMedsoftTokenToAppDelegate();
+    _sendXServerToAppDelegate();
     _startLocationTracking();
 
     _animationController = AnimationController(
@@ -128,6 +129,18 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       await platform.invokeMethod('startLocationManagerAfterLogin');
     } on PlatformException catch (e) {
       debugPrint("Error starting location manager: $e");
+    }
+  }
+
+  Future<void> _sendXServerToAppDelegate() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    try {
+      await platform.invokeMethod('sendXServerToAppDelegate', {
+        'xServer': prefs.getString('X-Server'),
+      });
+    } on PlatformException catch (e) {
+      debugPrint("Failed to send xToken to AppDelegate: '${e.message}'.");
     }
   }
 
@@ -190,7 +203,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
   void _initializeNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('app_icon');
+        AndroidInitializationSettings('launcher_icon');
 
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
