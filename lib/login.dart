@@ -27,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordVisible = false;
 
   List<String> _serverNames = [];
-  Map<String, String> sharedPreferencesData = {};
+  Map<String, dynamic> sharedPreferencesData = {};
 
   static const platform = MethodChannel(
     'com.example.new_project_location/location',
@@ -180,11 +180,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _loadSharedPreferencesData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    Map<String, String> data = {};
+    Map<String, dynamic> data = {};
 
     Set<String> allKeys = prefs.getKeys();
     for (String key in allKeys) {
-      data[key] = prefs.getString(key) ?? 'null';
+      if (key == 'isLoggedIn') {
+        data[key] = prefs.getBool(key);
+      } else {
+        data[key] = prefs.getString(key) ?? 'null';
+      }
     }
 
     setState(() {

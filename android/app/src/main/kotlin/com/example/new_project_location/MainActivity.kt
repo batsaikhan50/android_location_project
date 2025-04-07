@@ -42,8 +42,6 @@ class MainActivity : FlutterActivity() {
         xToken = sharedPreferences.getString("xToken", null)
         xToken = sharedPreferences.getString("xServer", null)
         xMedsoftToken = sharedPreferences.getString("xMedsoftToken", null)
-
-        requestLocationPermissions()
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -56,7 +54,7 @@ class MainActivity : FlutterActivity() {
                 "getLastLocation" -> getLastLocation(result)
                 "sendLocationToAPIByButton" -> sendLocationToAPIByButton(result)
                 "startLocationManagerAfterLogin" -> {
-
+                    requestLocationPermissions()
                     startForegroundLocationService()
                     result.success(null)
                 }
