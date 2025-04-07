@@ -78,7 +78,7 @@ class LocationForegroundService : Service() {
                         handler.postDelayed(
                                 {
                                     stopForegroundCompat()
-                                    Log.d("LocationService", "Notification stopped after 20 sec")
+                                    Log.d("LocationService", "Notification stopped after 10 sec")
                                 },
                                 10000
                         )
