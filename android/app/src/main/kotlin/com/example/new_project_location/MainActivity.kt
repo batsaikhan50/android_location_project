@@ -2,11 +2,11 @@ package com.example.new_project_location
 
 import android.Manifest
 import android.content.Context
-import android.content.SharedPreferences
 import android.content.Intent
+import android.content.SharedPreferences
 import android.location.Location
-import android.os.Bundle
 import android.os.Build
+import android.os.Bundle
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.work.*
@@ -14,7 +14,6 @@ import com.google.android.gms.location.*
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
@@ -25,20 +24,17 @@ import org.json.JSONObject
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.example.new_project_location/location"
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    // private lateinit var locationRequest: LocationRequest
+
     private var xToken: String? = null
     private var xServer: String? = null
     private var xMedsoftToken: String? = null
     private lateinit var sharedPreferences: SharedPreferences
-    private var lastLocation: Location? = null // Store the last sent location
-    private val distanceThreshold = 1f // Distance threshold in meters (100 meters for example)
+    private var lastLocation: Location? = null
+    private val distanceThreshold = 1f
     public lateinit var methodChannel: MethodChannel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // methodChannel = MethodChannel(flutterEngine!!.dartExecutor.binaryMessenger, CHANNEL)
-
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         sharedPreferences = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
@@ -48,23 +44,20 @@ class MainActivity : FlutterActivity() {
         xMedsoftToken = sharedPreferences.getString("xMedsoftToken", null)
 
         requestLocationPermissions()
-        
     }
-    
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        
+
         methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
         MethodChannelManager.methodChannel = methodChannel
-        methodChannel.setMethodCallHandler {
-                call,
-                result ->
+        methodChannel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "getLastLocation" -> getLastLocation(result)
                 "sendLocationToAPIByButton" -> sendLocationToAPIByButton(result)
                 "startLocationManagerAfterLogin" -> {
-                    // startLocationUpdates()
-                    startForegroundLocationService();
+
+                    startForegroundLocationService()
                     result.success(null)
                 }
                 "sendXTokenToAppDelegate" -> {
@@ -119,7 +112,7 @@ class MainActivity : FlutterActivity() {
                 )
                 result.success(
                         mapOf("latitude" to location.latitude, "longitude" to location.longitude)
-                ) // Return location
+                )
             } else {
                 result.error("LOCATION_ERROR", "Location not available", null)
             }
@@ -127,10 +120,10 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun sendLocationToAPIIfMoved(location: Location) {
-        // Check if last location is null or if the device has moved the required threshold distance
+
         if (lastLocation == null || location.distanceTo(lastLocation!!) >= distanceThreshold) {
-            sendLocationToAPI(location) // Send location to API
-            lastLocation = location // Update last location
+            sendLocationToAPI(location)
+            lastLocation = location
             Log.d("MainActivity", "Location sent: ${location.latitude}, ${location.longitude}")
         } else {
             Log.d("MainActivity", "Device has not moved enough to send location")
@@ -158,9 +151,8 @@ class MainActivity : FlutterActivity() {
                     override fun onLocationResult(locationResult: LocationResult) {
                         val location = locationResult.lastLocation
                         if (location != null) {
-                            sendLocationToAPIIfMoved(location) // Send location based on distance
+                            sendLocationToAPIIfMoved(location)
 
-                            // Send location update to Flutter
                             val locationData =
                                     mapOf(
                                             "latitude" to location.latitude,
@@ -177,7 +169,7 @@ class MainActivity : FlutterActivity() {
 
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(object : LocationCallback() {})
-        // cancelBackgroundWorker()
+
         Log.d("MainActivity", "Location updates stopped")
     }
 
@@ -232,28 +224,6 @@ class MainActivity : FlutterActivity() {
                 .invokeMethod("navigateToLogin", null)
     }
 
-    // private fun scheduleBackgroundWorker() {
-    //     val constraints =
-    //             Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
-
-    //     val workRequest =
-    //             PeriodicWorkRequestBuilder<LocationWorker>(15, TimeUnit.MINUTES)
-    //                     .setConstraints(constraints)
-    //                     .build()
-
-    //     WorkManager.getInstance(applicationContext)
-    //             .enqueueUniquePeriodicWork(
-    //                     "sendLocationWork",
-    //                     ExistingPeriodicWorkPolicy.REPLACE,
-    //                     workRequest
-    //             )
-    // }
-
-    // private fun cancelBackgroundWorker() {
-    //     WorkManager.getInstance(applicationContext).cancelUniqueWork("sendLocationWork")
-    // }
-
-
     private fun startForegroundLocationService() {
         val serviceIntent = Intent(this, LocationForegroundService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -262,7 +232,4 @@ class MainActivity : FlutterActivity() {
             startService(serviceIntent)
         }
     }
-    
-
-
 }
