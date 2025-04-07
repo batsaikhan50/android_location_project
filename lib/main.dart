@@ -106,6 +106,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     _sendXMedsoftTokenToAppDelegate();
     _sendXServerToAppDelegate();
     _startLocationTracking();
+    // _startForegroundLocationService();
 
     _animationController = AnimationController(
       vsync: this,
@@ -131,6 +132,14 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       debugPrint("Error starting location manager: $e");
     }
   }
+
+  // Future<void> _startForegroundLocationService() async {
+  //   try {
+  //     await platform.invokeMethod('startForegroundLocationService');
+  //   } on PlatformException catch (e) {
+  //     debugPrint("Error starting location manager: $e");
+  //   }
+  // }
 
   Future<void> _sendXServerToAppDelegate() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -247,6 +256,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
           importance: Importance.max,
           priority: Priority.high,
           showWhen: false,
+          channelShowBadge: true
         );
 
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =

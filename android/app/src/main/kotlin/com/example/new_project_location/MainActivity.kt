@@ -3,8 +3,10 @@ package com.example.new_project_location
 import android.Manifest
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.Intent
 import android.location.Location
 import android.os.Bundle
+import android.os.Build
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.work.*
@@ -30,9 +32,13 @@ class MainActivity : FlutterActivity() {
     private lateinit var sharedPreferences: SharedPreferences
     private var lastLocation: Location? = null // Store the last sent location
     private val distanceThreshold = 1f // Distance threshold in meters (100 meters for example)
+    public lateinit var methodChannel: MethodChannel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // methodChannel = MethodChannel(flutterEngine!!.dartExecutor.binaryMessenger, CHANNEL)
+
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         sharedPreferences = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
@@ -42,18 +48,23 @@ class MainActivity : FlutterActivity() {
         xMedsoftToken = sharedPreferences.getString("xMedsoftToken", null)
 
         requestLocationPermissions()
+        
     }
-
+    
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler {
+        
+        methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        MethodChannelManager.methodChannel = methodChannel
+        methodChannel.setMethodCallHandler {
                 call,
                 result ->
             when (call.method) {
                 "getLastLocation" -> getLastLocation(result)
                 "sendLocationToAPIByButton" -> sendLocationToAPIByButton(result)
                 "startLocationManagerAfterLogin" -> {
-                    startLocationUpdates()
+                    // startLocationUpdates()
+                    startForegroundLocationService();
                     result.success(null)
                 }
                 "sendXTokenToAppDelegate" -> {
@@ -166,7 +177,7 @@ class MainActivity : FlutterActivity() {
 
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(object : LocationCallback() {})
-        cancelBackgroundWorker()
+        // cancelBackgroundWorker()
         Log.d("MainActivity", "Location updates stopped")
     }
 
@@ -221,24 +232,37 @@ class MainActivity : FlutterActivity() {
                 .invokeMethod("navigateToLogin", null)
     }
 
-    private fun scheduleBackgroundWorker() {
-        val constraints =
-                Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+    // private fun scheduleBackgroundWorker() {
+    //     val constraints =
+    //             Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
-        val workRequest =
-                PeriodicWorkRequestBuilder<LocationWorker>(15, TimeUnit.MINUTES)
-                        .setConstraints(constraints)
-                        .build()
+    //     val workRequest =
+    //             PeriodicWorkRequestBuilder<LocationWorker>(15, TimeUnit.MINUTES)
+    //                     .setConstraints(constraints)
+    //                     .build()
 
-        WorkManager.getInstance(applicationContext)
-                .enqueueUniquePeriodicWork(
-                        "sendLocationWork",
-                        ExistingPeriodicWorkPolicy.REPLACE,
-                        workRequest
-                )
+    //     WorkManager.getInstance(applicationContext)
+    //             .enqueueUniquePeriodicWork(
+    //                     "sendLocationWork",
+    //                     ExistingPeriodicWorkPolicy.REPLACE,
+    //                     workRequest
+    //             )
+    // }
+
+    // private fun cancelBackgroundWorker() {
+    //     WorkManager.getInstance(applicationContext).cancelUniqueWork("sendLocationWork")
+    // }
+
+
+    private fun startForegroundLocationService() {
+        val serviceIntent = Intent(this, LocationForegroundService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
     }
+    
 
-    private fun cancelBackgroundWorker() {
-        WorkManager.getInstance(applicationContext).cancelUniqueWork("sendLocationWork")
-    }
+
 }
