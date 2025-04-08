@@ -26,7 +26,7 @@ class LocationForegroundService : Service() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var sharedPreferences: SharedPreferences
     private var lastLocation: Location? = null
-    private val distanceThreshold = 1f
+    private val distanceThreshold = 10f
 
     private val handler = Handler(Looper.getMainLooper())
 

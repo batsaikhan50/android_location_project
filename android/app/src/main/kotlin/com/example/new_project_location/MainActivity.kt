@@ -1,7 +1,9 @@
 package com.example.new_project_location
 
 import android.Manifest
+import android.app.AlertDialog
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.location.Location
@@ -30,8 +32,13 @@ class MainActivity : FlutterActivity() {
     private var xMedsoftToken: String? = null
     private lateinit var sharedPreferences: SharedPreferences
     private var lastLocation: Location? = null
-    private val distanceThreshold = 1f
+    // private val distanceThreshold = 1f
     public lateinit var methodChannel: MethodChannel
+    private var isBackgroundPermissionDialogShown = false
+    private var shouldRetryStartLocationManager = false
+
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,8 +61,20 @@ class MainActivity : FlutterActivity() {
                 "getLastLocation" -> getLastLocation(result)
                 "sendLocationToAPIByButton" -> sendLocationToAPIByButton(result)
                 "startLocationManagerAfterLogin" -> {
-                    requestLocationPermissions()
-                    startForegroundLocationService()
+                    if (hasLocationPermissions()) {
+                        if (!isBackgroundLocationGranted()) {
+                            if (!isBackgroundPermissionDialogShown) {
+                                showBackgroundPermissionDialog()
+                                shouldRetryStartLocationManager = true
+                            }
+                        } else {
+                            startForegroundLocationService()
+                        }
+                    } else {
+                        requestLocationPermissions()
+                        shouldRetryStartLocationManager = true
+                    }
+
                     result.success(null)
                 }
                 "sendXTokenToAppDelegate" -> {
@@ -87,17 +106,116 @@ class MainActivity : FlutterActivity() {
             }
         }
     }
+    private fun isBackgroundLocationGranted(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.ACCESS_BACKGROUND_LOCATION
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+    }
+
+    private fun showBackgroundPermissionDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_background_permission, null)
+    
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .setPositiveButton("Yes") { dialogInterface: DialogInterface, which: Int ->
+                openAppSettings()
+                // Only reset the flag after the user has interacted with the dialog.
+                dialogInterface.dismiss() 
+            }
+            .setNegativeButton("No") { dialogInterface: DialogInterface, which: Int ->
+                dialogInterface.dismiss()
+                // Reset the flag only after user clicks "No"
+                isBackgroundPermissionDialogShown = false 
+                Log.d("Permission", "User denied background permission. Try again later.")
+            }
+            .create()
+    
+        dialog.show()
+        // Set the flag when the dialog is shown, so it doesn't show again if the permissions are not granted
+        isBackgroundPermissionDialogShown = true
+    }
+    
+    private fun openAppSettings() {
+        val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+        intent.data = android.net.Uri.fromParts("package", packageName, null)
+        startActivity(intent)
+    }
+
+    override fun onRequestPermissionsResult(
+            requestCode: Int,
+            permissions: Array<out String>,
+            grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == 1) {
+            val allGranted =
+                    grantResults.isNotEmpty() &&
+                            grantResults.all {
+                                it == android.content.pm.PackageManager.PERMISSION_GRANTED
+                            }
+
+            if (allGranted) {
+                Log.d("MainActivity", "All location permissions granted")
+
+                if (!isBackgroundLocationGranted()) {
+                    showBackgroundPermissionDialog()
+                }
+            } else {
+                Log.e("MainActivity", "Location permissions denied")
+            }
+        }
+    }
+
+    private fun hasLocationPermissions(): Boolean {
+        val fine =
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse =
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+        return fine == android.content.pm.PackageManager.PERMISSION_GRANTED &&
+                coarse == android.content.pm.PackageManager.PERMISSION_GRANTED
+    }
+
+    override fun onResume() {
+    super.onResume()
+
+    if (shouldRetryStartLocationManager && hasLocationPermissions()) {
+        shouldRetryStartLocationManager = false // reset flag
+
+        if (!isBackgroundLocationGranted()) {
+            if (!isBackgroundPermissionDialogShown) {
+                showBackgroundPermissionDialog()
+                isBackgroundPermissionDialogShown = true
+                shouldRetryStartLocationManager = true // keep flag to retry again
+            }
+        } else {
+            startForegroundLocationService()
+        }
+    }
+}
+
+    
+
 
     private fun requestLocationPermissions() {
-        ActivityCompat.requestPermissions(
-                this,
-                arrayOf(
+        val permissions =
+                mutableListOf(
                         Manifest.permission.ACCESS_FINE_LOCATION,
                         Manifest.permission.ACCESS_COARSE_LOCATION,
                         Manifest.permission.POST_NOTIFICATIONS
-                ),
-                1
-        )
+                )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            permissions.add(Manifest.permission.FOREGROUND_SERVICE_LOCATION)
+        }
+
+        ActivityCompat.requestPermissions(this, permissions.toTypedArray(), 1)
     }
 
     private fun getLastLocation(result: MethodChannel.Result) {
@@ -117,16 +235,16 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun sendLocationToAPIIfMoved(location: Location) {
+    // private fun sendLocationToAPIIfMoved(location: Location) {
 
-        if (lastLocation == null || location.distanceTo(lastLocation!!) >= distanceThreshold) {
-            sendLocationToAPI(location)
-            lastLocation = location
-            Log.d("MainActivity", "Location sent: ${location.latitude}, ${location.longitude}")
-        } else {
-            Log.d("MainActivity", "Device has not moved enough to send location")
-        }
-    }
+    //     if (lastLocation == null || location.distanceTo(lastLocation!!) >= distanceThreshold) {
+    //         sendLocationToAPI(location)
+    //         lastLocation = location
+    //         Log.d("MainActivity", "Location sent: ${location.latitude}, ${location.longitude}")
+    //     } else {
+    //         Log.d("MainActivity", "Device has not moved enough to send location")
+    //     }
+    // }
 
     private fun sendLocationToAPIByButton(result: MethodChannel.Result) {
         fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
@@ -140,30 +258,30 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun startLocationUpdates() {
-        val locationRequest =
-                LocationRequest.Builder(5000L).setPriority(Priority.PRIORITY_HIGH_ACCURACY).build()
+    // private fun startLocationUpdates() {
+    //     val locationRequest =
+    //             LocationRequest.Builder(5000L).setPriority(Priority.PRIORITY_HIGH_ACCURACY).build()
 
-        val locationCallback =
-                object : LocationCallback() {
-                    override fun onLocationResult(locationResult: LocationResult) {
-                        val location = locationResult.lastLocation
-                        if (location != null) {
-                            sendLocationToAPIIfMoved(location)
+    //     val locationCallback =
+    //             object : LocationCallback() {
+    //                 override fun onLocationResult(locationResult: LocationResult) {
+    //                     val location = locationResult.lastLocation
+    //                     if (location != null) {
+    //                         sendLocationToAPIIfMoved(location)
 
-                            val locationData =
-                                    mapOf(
-                                            "latitude" to location.latitude,
-                                            "longitude" to location.longitude
-                                    )
-                            MethodChannel(flutterEngine!!.dartExecutor.binaryMessenger, CHANNEL)
-                                    .invokeMethod("updateLocation", locationData)
-                        }
-                    }
-                }
+    //                         val locationData =
+    //                                 mapOf(
+    //                                         "latitude" to location.latitude,
+    //                                         "longitude" to location.longitude
+    //                                 )
+    //                         MethodChannel(flutterEngine!!.dartExecutor.binaryMessenger, CHANNEL)
+    //                                 .invokeMethod("updateLocation", locationData)
+    //                     }
+    //                 }
+    //             }
 
-        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, mainLooper)
-    }
+    //     fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, mainLooper)
+    // }
 
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(object : LocationCallback() {})
@@ -223,6 +341,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun startForegroundLocationService() {
+        Log.d("startForegroundLocationService", "---CALLED------------------------------------------------CALLED")
         val serviceIntent = Intent(this, LocationForegroundService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent)
