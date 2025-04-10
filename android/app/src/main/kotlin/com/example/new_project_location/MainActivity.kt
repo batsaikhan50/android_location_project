@@ -123,12 +123,10 @@ class MainActivity : FlutterActivity() {
                         .setCancelable(false)
                         .setPositiveButton("Yes") { dialogInterface: DialogInterface, which: Int ->
                             openAppSettings()
-                            // Only reset the flag after the user has interacted with the dialog.
                             dialogInterface.dismiss()
                         }
                         .setNegativeButton("No") { dialogInterface: DialogInterface, which: Int ->
                             dialogInterface.dismiss()
-                            // Reset the flag only after user clicks "No"
                             isBackgroundPermissionDialogShown = false
                             Log.d(
                                     "Permission",
@@ -138,8 +136,6 @@ class MainActivity : FlutterActivity() {
                         .create()
 
         dialog.show()
-        // Set the flag when the dialog is shown, so it doesn't show again if the permissions are
-        // not granted
         isBackgroundPermissionDialogShown = true
     }
 

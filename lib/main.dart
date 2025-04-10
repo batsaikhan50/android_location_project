@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:new_project_location/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:new_project_location/guide.dart';
 
 import 'login.dart';
 
@@ -247,7 +248,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
           importance: Importance.max,
           priority: Priority.high,
           showWhen: false,
-          channelShowBadge: true
+          channelShowBadge: true,
         );
 
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
@@ -362,6 +363,19 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
               ),
             ),
             const Divider(),
+            ListTile(
+              leading: Icon(Icons.info_outline, color: Colors.blueAccent),
+              title: Text('Хэрэглэх заавар', style: TextStyle(fontSize: 18)),
+              onTap: () {
+                Navigator.pop(context); // close drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => GuideScreen()),
+                );
+              },
+            ),
+            Divider(),
+
             Spacer(),
             Container(
               margin: const EdgeInsets.all(10),
