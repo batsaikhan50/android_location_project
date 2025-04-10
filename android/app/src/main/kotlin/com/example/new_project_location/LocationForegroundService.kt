@@ -26,7 +26,7 @@ class LocationForegroundService : Service() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var sharedPreferences: SharedPreferences
     private var lastLocation: Location? = null
-    private val distanceThreshold = 10f
+    private val distanceThreshold = 2f
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -42,9 +42,7 @@ class LocationForegroundService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
-        if (!isAppInForeground) {
-            startForeground(1, createNotification("Байршил дамжуулж байна..."))
-        }
+        startForeground(1, createNotification("Байршил дамжуулж байна..."))
         startLocationUpdates()
         return START_STICKY
     }
@@ -72,19 +70,16 @@ class LocationForegroundService : Service() {
     private val notificationRunnable =
             object : Runnable {
                 override fun run() {
-                    if (!isAppInForeground) {
-                        startForeground(1, createNotification("Байршил дамжуулж байна..."))
 
-                        handler.postDelayed(
-                                {
-                                    stopForegroundCompat()
-                                    Log.d("LocationService", "Notification stopped after 10 sec")
-                                },
-                                10000
-                        )
-                    } else {
-                        Log.d("in foreground", "App is in foreground")
-                    }
+                    startForeground(1, createNotification("Байршил дамжуулж байна..."))
+
+                    handler.postDelayed(
+                            {
+                                stopForegroundCompat()
+                                Log.d("LocationService", "Notification stopped after 10 sec")
+                            },
+                            10000
+                    )
 
                     handler.postDelayed(this, 2 * 60 * 1000) // 2 minutes
                 }
@@ -173,6 +168,10 @@ class LocationForegroundService : Service() {
 
                 if (!response.isSuccessful) {
                     Log.e("LocationWorker", "Failed to send location: ${response.code}")
+
+                    if (response.code == 401 || response.code == 403 || response.code == 400) {
+                        withContext(Dispatchers.Main) { navigateToLogin() }
+                    }
                 } else {
                     Log.d("LocationWorker", "Successfully sent location")
                 }
@@ -182,8 +181,9 @@ class LocationForegroundService : Service() {
         }
     }
 
-    fun setAppInForeground(isForeground: Boolean) {
-        isAppInForeground = isForeground
+    private fun navigateToLogin() {
+        val channel = MethodChannelManager.methodChannel
+        channel?.invokeMethod("navigateToLogin", null)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
