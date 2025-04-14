@@ -419,13 +419,36 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             SizedBox(height: 10),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _locationHistory.length,
-                itemBuilder: (context, index) {
-                  return ListTile(title: Text(_locationHistory[index]));
-                },
-              ),
+
+            LayoutBuilder(
+              builder: (context, constraints) {
+                bool isLandscape =
+                    MediaQuery.of(context).orientation == Orientation.landscape;
+
+                double width =
+                    isLandscape
+                        ? MediaQuery.of(context).size.width * 0.33
+                        : MediaQuery.of(context).size.width;
+
+                return Center(
+                  child: Container(
+                    width: width,
+                    height: 200, // Adjust height as needed, or make dynamic
+                    child: ListView.builder(
+                      itemCount: _locationHistory.length,
+                      itemBuilder: (context, index) {
+                        return Center(
+                          // ⬅️ Center each item
+                          child: Text(
+                            _locationHistory[index],
+                            textAlign: TextAlign.center,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
             ),
 
             SizedBox(height: 50),

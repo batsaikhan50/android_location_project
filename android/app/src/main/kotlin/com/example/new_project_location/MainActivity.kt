@@ -58,20 +58,26 @@ class MainActivity : FlutterActivity() {
                 "getLastLocation" -> getLastLocation(result)
                 "sendLocationToAPIByButton" -> sendLocationToAPIByButton(result)
                 "startLocationManagerAfterLogin" -> {
-                    if (hasLocationPermissions()) {
-                        if (!isBackgroundLocationGranted()) {
-                            if (!isBackgroundPermissionDialogShown) {
-                                showBackgroundPermissionDialog()
-                                shouldRetryStartLocationManager = true
-                            }
-                        } else {
-                            startForegroundLocationService()
-                        }
-                    } else {
+                    if (!hasWhileInUsePermission()) {
+                        // 1. Request "While in Use" permission
+                        Log.d("PermissionFlow", "Requesting While in Use permission...")
                         requestLocationPermissions()
-                        shouldRetryStartLocationManager = true
+                        result.success(null)
+                        return@setMethodCallHandler
                     }
 
+                    if (!isBackgroundLocationGranted()) {
+                        // 2. "While in Use" is granted, now show dialog repeatedly for "Always"
+                        Log.d("PermissionFlow", "While in Use granted. Requesting Always permission...")
+                        if (!isBackgroundPermissionDialogShown) {
+                            showBackgroundPermissionDialog()
+                        }
+                        result.success(null)
+                        return@setMethodCallHandler
+                    }
+
+                    // 3. Both permissions granted → start service
+                    startForegroundLocationService()
                     result.success(null)
                 }
                 "sendXTokenToAppDelegate" -> {
@@ -122,6 +128,7 @@ class MainActivity : FlutterActivity() {
                         .setView(dialogView)
                         .setCancelable(false)
                         .setPositiveButton("Yes") { dialogInterface: DialogInterface, which: Int ->
+                            shouldRetryStartLocationManager = true
                             openAppSettings()
                             dialogInterface.dismiss()
                         }
@@ -146,31 +153,55 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onRequestPermissionsResult(
-            requestCode: Int,
-            permissions: Array<out String>,
-            grantResults: IntArray
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == 1) {
-            val allGranted =
-                    grantResults.isNotEmpty() &&
-                            grantResults.all {
-                                it == android.content.pm.PackageManager.PERMISSION_GRANTED
-                            }
+            val allGranted = grantResults.isNotEmpty() &&
+                grantResults.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED }
 
-            if (allGranted) {
-                Log.d("MainActivity", "All location permissions granted")
-
-                if (!isBackgroundLocationGranted()) {
-                    showBackgroundPermissionDialog()
-                }
+            if (!hasWhileInUsePermission()) {
+                Log.d("Permission", "While in use not granted. Prompting again...")
+                // Optional: You can delay or explain before retrying
             } else {
-                Log.e("MainActivity", "Location permissions denied")
+                Log.d("Permission", "While in use granted.")
+
+                if (!isBackgroundLocationGranted() && !isBackgroundPermissionDialogShown) {
+                    showBackgroundPermissionDialog()
+                    isBackgroundPermissionDialogShown = true
+                }
             }
         }
     }
 
+    private fun isNotificationPermissionGranted(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+                    android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else {
+            true // auto granted below Android 13
+        }
+    }
+
+    private fun showNotificationPermissionDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Enable Notifications")
+            .setMessage("This app requires notification permission to function properly.")
+            .setCancelable(false)
+            .setPositiveButton("Enable") { dialog, _ ->
+                openAppSettings()
+                dialog.dismiss()
+            }
+            .setNegativeButton("Exit App") { dialog, _ ->
+                dialog.dismiss()
+                finishAffinity() // Optional: Close the app
+            }
+            .show()
+    }
+    
     private fun hasLocationPermissions(): Boolean {
         val fine =
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -183,20 +214,32 @@ class MainActivity : FlutterActivity() {
     override fun onResume() {
         super.onResume()
 
-        if (shouldRetryStartLocationManager && hasLocationPermissions()) {
-            shouldRetryStartLocationManager = false // reset flag
+        if (!isNotificationPermissionGranted()) {
+            showNotificationPermissionDialog()
+            return
+        }
 
-            if (!isBackgroundLocationGranted()) {
-                if (!isBackgroundPermissionDialogShown) {
-                    showBackgroundPermissionDialog()
-                    isBackgroundPermissionDialogShown = true
-                    shouldRetryStartLocationManager = true // keep flag to retry again
-                }
-            } else {
+        // Existing location permission checks:
+        if (hasWhileInUsePermission() && isBackgroundLocationGranted()) {
+            if (shouldRetryStartLocationManager) {
+                shouldRetryStartLocationManager = false
                 startForegroundLocationService()
             }
+        } else if (!hasWhileInUsePermission()) {
+            requestLocationPermissions()
+        } else if (!isBackgroundLocationGranted() && !isBackgroundPermissionDialogShown) {
+            showBackgroundPermissionDialog()
         }
     }
+
+
+    private fun hasWhileInUsePermission(): Boolean {
+        val fine = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+        return fine == android.content.pm.PackageManager.PERMISSION_GRANTED ||
+                coarse == android.content.pm.PackageManager.PERMISSION_GRANTED
+    }
+    
 
     private fun requestLocationPermissions() {
         val permissions =
