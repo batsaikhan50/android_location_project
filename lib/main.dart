@@ -367,7 +367,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
               leading: Icon(Icons.info_outline, color: Colors.blueAccent),
               title: Text('Хэрэглэх заавар', style: TextStyle(fontSize: 18)),
               onTap: () {
-                Navigator.pop(context); // close drawer
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => GuideScreen()),
@@ -433,12 +433,11 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                 return Center(
                   child: Container(
                     width: width,
-                    height: 200, // Adjust height as needed, or make dynamic
+                    height: 200,
                     child: ListView.builder(
                       itemCount: _locationHistory.length,
                       itemBuilder: (context, index) {
                         return Center(
-                          // ⬅️ Center each item
                           child: Text(
                             _locationHistory[index],
                             textAlign: TextAlign.center,

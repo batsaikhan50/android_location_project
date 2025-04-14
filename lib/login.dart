@@ -205,7 +205,6 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // const SizedBox(height: 20),
               Image.asset(
                 'assets/icon/locationlogo.png',
                 width: 150,
@@ -280,7 +279,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               TextField(
                 controller: _passwordController,
-                obscureText: !_isPasswordVisible, // Use the toggle state
+                obscureText: !_isPasswordVisible,
                 decoration: InputDecoration(
                   labelText: 'Нууц үг',
                   prefixIcon: const Icon(Icons.lock),
@@ -292,8 +291,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     onPressed: () {
                       setState(() {
-                        _isPasswordVisible =
-                            !_isPasswordVisible; // Toggle visibility
+                        _isPasswordVisible = !_isPasswordVisible;
                       });
                     },
                   ),
@@ -313,14 +311,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
 
-              // 'Нууц үг мартсан?' Label
               Align(
                 alignment: Alignment.centerRight,
                 child: GestureDetector(
-                  onTap: () {
-                    // Handle the forgot password action here
-                    // You can navigate to another screen or show a dialog
-                  },
+                  onTap: () {},
                   child: Text(
                     'Нууц үг мартсан?',
                     style: TextStyle(
