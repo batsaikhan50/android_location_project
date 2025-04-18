@@ -41,17 +41,19 @@ class LocationForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false)
-        Log.d("isLoggedInBg", isLoggedIn.toString())
-        if (isLoggedIn) {
-            Log.d("LocationService", "User is logged in. Starting foreground service and location updates.")
-            startForeground(1, createNotification("Байршил дамжуулж байна..."))
-            startLocationUpdates()
-        } else {
-            Log.d("LocationService", "User is not logged in. Foreground service will not start.")
-            stopSelf() // Optionally stop the service if user is not logged in
-        }
+        // val isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false)
+        // Log.d("isLoggedInBg", isLoggedIn.toString())
+        // if (isLoggedIn) {
+        //     Log.d("LocationService", "User is logged in. Starting foreground service and location updates.")
+        //     startForeground(1, createNotification("Байршил дамжуулж байна..."))
+        //     startLocationUpdates()
+        // } else {
+        //     Log.d("LocationService", "User is not logged in. Foreground service will not start.")
+        //     stopSelf() // Optionally stop the service if user is not logged in
+        // }
     
+        startForeground(1, createNotification("Байршил дамжуулж байна..."))
+        startLocationUpdates()
         return START_STICKY
     }
     

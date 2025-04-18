@@ -6,7 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:new_project_location/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:new_project_location/guide.dart';
-import 'package:uni_links/uni_links.dart';
+import 'package:app_links/app_links.dart';
 
 import 'login.dart';
 
@@ -97,10 +97,12 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   late Animation<double> _fadeAnimation;
   bool _isLocationSent = false;
 
+final _appLinks = AppLinks();
+
   @override
   void initState() {
     super.initState();
-    _handleIncomingLinks();
+    _initDeepLinks();
     _initializeNotifications();
 
     platform.setMethodCallHandler(_methodCallHandler);
@@ -127,29 +129,59 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     );
   }
 
-  void _handleIncomingLinks() async {
-    try {
-      // Listen for incoming links
-      uriLinkStream.listen((Uri? uri) {
-        if (uri != null) {
-          debugPrint('Received link: $uri');
+  // void _handleIncomingLinks() async {
+  //   try {
+  //     // Listen for incoming links
+  //     uriLinkStream.listen((Uri? uri) {
+  //       if (uri != null) {
+  //         debugPrint('Received link: $uri');
+  //         if (uri.scheme == 'medsofttrack' && uri.host == 'callback') {
+  //           // Example: myapp://callback?success=true
+  //           final success = uri.queryParameters['success'];
+  //           if (success == 'true') {
+  //             // Handle successful callback (e.g., close WebView, show toast, etc.)
+  //             ScaffoldMessenger.of(context).showSnackBar(
+  //               SnackBar(content: Text('Амжилттай баталгаажлаа!')),
+  //             );
+  //           }
+  //         }
+  //       }
+  //     });
+  //   } on Exception catch (e) {
+  //     debugPrint('Failed to handle link: $e');
+  //   }
+  // }
 
-          if (uri.scheme == 'medsofttrack' && uri.host == 'callback') {
-            // Example: myapp://callback?success=true
-            final success = uri.queryParameters['success'];
-            if (success == 'true') {
-              // Handle successful callback (e.g., close WebView, show toast, etc.)
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Амжилттай баталгаажлаа!')),
-              );
-            }
-          }
-        }
-      });
-    } on Exception catch (e) {
-      debugPrint('Failed to handle link: $e');
+void _initDeepLinks() async {
+  try {
+    // Handle the initial link (cold start)
+    final initialUri = await _appLinks.getInitialLink();
+    if (initialUri != null) {
+      _handleUri(initialUri);
+    }
+
+    // Handle background/resume links
+    _appLinks.uriLinkStream.listen((Uri uri) {
+      _handleUri(uri);
+    });
+  } catch (e) {
+    debugPrint('Error in deep link handling: $e');
+  }
+}
+
+
+void _handleUri(Uri uri) {
+  debugPrint('Received URI: $uri');
+  if (uri.scheme == 'medsofttrack' && uri.host == 'callback') {
+    final success = uri.queryParameters['success'];
+    if (success == 'true') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Амжилттай баталгаажлаа!')),
+      );
     }
   }
+}
+
 
   Future<void> _startLocationTracking() async {
     try {

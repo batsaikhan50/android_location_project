@@ -330,13 +330,12 @@ class MainActivity : FlutterActivity() {
     }
 
     fun sendLocationToAPI(location: Location) {
-        
-        val isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false)
-        Log.d("isLoggedInFg", isLoggedIn.toString())
-        if (!isLoggedIn) {
-            Log.d("MainActivity", "User not logged in. Location not sent.")
-            return
-        }
+        // val isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false)
+        // Log.d("isLoggedInFg", isLoggedIn.toString())
+        // if (!isLoggedIn) {
+        //     Log.d("MainActivity", "User not logged in. Location not sent.")
+        //     return
+        // }
 
         if (xToken.isNullOrEmpty() || xMedsoftToken.isNullOrEmpty()) {
             Log.e("MainActivity", "Tokens not available")
