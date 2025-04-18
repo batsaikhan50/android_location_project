@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:new_project_location/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:new_project_location/guide.dart';
+import 'package:uni_links/uni_links.dart';
 
 import 'login.dart';
 
@@ -99,6 +100,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _handleIncomingLinks();
     _initializeNotifications();
 
     platform.setMethodCallHandler(_methodCallHandler);
@@ -123,6 +125,30 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     _fadeAnimation = Tween<double>(begin: 0.0, end: 0.8).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+  }
+
+  void _handleIncomingLinks() async {
+    try {
+      // Listen for incoming links
+      uriLinkStream.listen((Uri? uri) {
+        if (uri != null) {
+          debugPrint('Received link: $uri');
+
+          if (uri.scheme == 'medsofttrack' && uri.host == 'callback') {
+            // Example: myapp://callback?success=true
+            final success = uri.queryParameters['success'];
+            if (success == 'true') {
+              // Handle successful callback (e.g., close WebView, show toast, etc.)
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Амжилттай баталгаажлаа!')),
+              );
+            }
+          }
+        }
+      });
+    } on Exception catch (e) {
+      debugPrint('Failed to handle link: $e');
+    }
   }
 
   Future<void> _startLocationTracking() async {
@@ -327,6 +353,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     }
 
     Navigator.pushReplacement(
+      // ignore: use_build_context_synchronously
       context,
       MaterialPageRoute(builder: (context) => LoginScreen()),
     );

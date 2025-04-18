@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:http/http.dart' as http;
 import 'package:new_project_location/constants.dart';
+import 'package:new_project_location/webview_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'main.dart';
@@ -23,10 +24,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
   String _errorMessage = '';
-  String _selectedRole = '';
+  Map<String, String>? _selectedRole;
+
   bool _isPasswordVisible = false;
 
-  List<String> _serverNames = [];
+  List<Map<String, String>> _serverNames = [];
+
   Map<String, dynamic> sharedPreferencesData = {};
 
   static const platform = MethodChannel(
@@ -64,9 +67,15 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         if (data['success'] == true) {
-          final List<String> serverNames = List<String>.from(
-            data['data'].map((server) => server['name']),
-          );
+          final List<Map<String, String>> serverNames =
+              List<Map<String, String>>.from(
+                data['data'].map<Map<String, String>>((server) {
+                  return {
+                    'name': server['name'].toString(),
+                    'url': server['url'].toString(),
+                  };
+                }),
+              );
 
           setState(() {
             _serverNames = serverNames;
@@ -100,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
-    if (_selectedRole.isEmpty) {
+    if (_selectedRole == null) {
       setState(() {
         _errorMessage = 'Please select a server';
         _isLoading = false;
@@ -115,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final headers = {
       'X-Token': Constants.xToken,
-      'X-Server': _selectedRole,
+      'X-Server': _selectedRole?['name'] ?? '',
       'Content-Type': 'application/json',
     };
 
@@ -140,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
           final String token = data['data']['token'];
 
-          await prefs.setString('X-Server', _selectedRole);
+          await prefs.setString('X-Server', _selectedRole?['name'] ?? '');
           await prefs.setString('X-Medsoft-Token', token);
           await prefs.setString('Username', _usernameController.text);
 
@@ -239,22 +248,30 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Icon(Icons.local_hospital, color: Colors.black),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: DropdownButton<String>(
-                          value: _selectedRole.isEmpty ? null : _selectedRole,
+                        child: DropdownButton<Map<String, String>>(
+                          value: _selectedRole,
                           hint: const Text('Эмнэлэг сонгох'),
                           isExpanded: true,
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _selectedRole = newValue!;
-                            });
+                          onChanged: (Map<String, String>? newValue) async {
+                            if (newValue != null) {
+                              setState(() {
+                                _selectedRole = newValue;
+                              });
+                              SharedPreferences prefs =
+                                  await SharedPreferences.getInstance();
+                              await prefs.setString(
+                                'forgetUrl',
+                                newValue['url'] ?? '',
+                              );
+                            }
                           },
                           items:
-                              _serverNames.map<DropdownMenuItem<String>>((
-                                String value,
-                              ) {
-                                return DropdownMenuItem<String>(
+                              _serverNames.map<
+                                DropdownMenuItem<Map<String, String>>
+                              >((Map<String, String> value) {
+                                return DropdownMenuItem<Map<String, String>>(
                                   value: value,
-                                  child: Text(value),
+                                  child: Text(value['name']!),
                                 );
                               }).toList(),
                           underline: const SizedBox.shrink(),
@@ -314,7 +331,24 @@ class _LoginScreenState extends State<LoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: GestureDetector(
-                  onTap: () {},
+                  onTap: () async {
+                    SharedPreferences prefs =
+                        await SharedPreferences.getInstance();
+                    String? baseUrl = prefs.getString('forgetUrl');
+
+                    if (baseUrl != null && baseUrl.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => WebViewScreen(
+                                url: '$baseUrl/forget?callback=medsofttrack://callback',
+                                title: 'Нууц үг сэргээх',
+                              ),
+                        ),
+                      );
+                    }
+                  },
                   child: Text(
                     'Нууц үг мартсан?',
                     style: TextStyle(

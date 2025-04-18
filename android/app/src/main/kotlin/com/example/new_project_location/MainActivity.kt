@@ -59,7 +59,7 @@ class MainActivity : FlutterActivity() {
                 "sendLocationToAPIByButton" -> sendLocationToAPIByButton(result)
                 "startLocationManagerAfterLogin" -> {
                     if (!hasWhileInUsePermission()) {
-                        // 1. Request "While in Use" permission
+
                         Log.d("PermissionFlow", "Requesting While in Use permission...")
                         requestLocationPermissions()
                         result.success(null)
@@ -67,8 +67,11 @@ class MainActivity : FlutterActivity() {
                     }
 
                     if (!isBackgroundLocationGranted()) {
-                        // 2. "While in Use" is granted, now show dialog repeatedly for "Always"
-                        Log.d("PermissionFlow", "While in Use granted. Requesting Always permission...")
+
+                        Log.d(
+                                "PermissionFlow",
+                                "While in Use granted. Requesting Always permission..."
+                        )
                         if (!isBackgroundPermissionDialogShown) {
                             showBackgroundPermissionDialog()
                         }
@@ -76,7 +79,6 @@ class MainActivity : FlutterActivity() {
                         return@setMethodCallHandler
                     }
 
-                    // 3. Both permissions granted → start service
                     startForegroundLocationService()
                     result.success(null)
                 }
@@ -153,19 +155,21 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
+            requestCode: Int,
+            permissions: Array<out String>,
+            grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == 1) {
-            val allGranted = grantResults.isNotEmpty() &&
-                grantResults.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED }
+            val allGranted =
+                    grantResults.isNotEmpty() &&
+                            grantResults.all {
+                                it == android.content.pm.PackageManager.PERMISSION_GRANTED
+                            }
 
             if (!hasWhileInUsePermission()) {
                 Log.d("Permission", "While in use not granted. Prompting again...")
-                // Optional: You can delay or explain before retrying
             } else {
                 Log.d("Permission", "While in use granted.")
 
@@ -182,26 +186,26 @@ class MainActivity : FlutterActivity() {
             ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
                     android.content.pm.PackageManager.PERMISSION_GRANTED
         } else {
-            true // auto granted below Android 13
+            true
         }
     }
 
     private fun showNotificationPermissionDialog() {
         AlertDialog.Builder(this)
-            .setTitle("Enable Notifications")
-            .setMessage("This app requires notification permission to function properly.")
-            .setCancelable(false)
-            .setPositiveButton("Enable") { dialog, _ ->
-                openAppSettings()
-                dialog.dismiss()
-            }
-            .setNegativeButton("Exit App") { dialog, _ ->
-                dialog.dismiss()
-                finishAffinity() // Optional: Close the app
-            }
-            .show()
+                .setTitle("Enable Notifications")
+                .setMessage("This app requires notification permission to function properly.")
+                .setCancelable(false)
+                .setPositiveButton("Enable") { dialog, _ ->
+                    openAppSettings()
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Exit App") { dialog, _ ->
+                    dialog.dismiss()
+                    finishAffinity()
+                }
+                .show()
     }
-    
+
     private fun hasLocationPermissions(): Boolean {
         val fine =
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -219,7 +223,6 @@ class MainActivity : FlutterActivity() {
             return
         }
 
-        // Existing location permission checks:
         if (hasWhileInUsePermission() && isBackgroundLocationGranted()) {
             if (shouldRetryStartLocationManager) {
                 shouldRetryStartLocationManager = false
@@ -232,14 +235,14 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-
     private fun hasWhileInUsePermission(): Boolean {
-        val fine = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-        val coarse = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+        val fine =
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse =
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
         return fine == android.content.pm.PackageManager.PERMISSION_GRANTED ||
                 coarse == android.content.pm.PackageManager.PERMISSION_GRANTED
     }
-    
 
     private fun requestLocationPermissions() {
         val permissions =
@@ -297,8 +300,7 @@ class MainActivity : FlutterActivity() {
 
     private fun startLocationUpdates() {
         val locationRequest =
-    
-    LocationRequest.Builder(5000L).setPriority(Priority.PRIORITY_HIGH_ACCURACY).build()
+                LocationRequest.Builder(5000L).setPriority(Priority.PRIORITY_HIGH_ACCURACY).build()
 
         val locationCallback =
                 object : LocationCallback() {
@@ -328,6 +330,14 @@ class MainActivity : FlutterActivity() {
     }
 
     fun sendLocationToAPI(location: Location) {
+        
+        val isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false)
+        Log.d("isLoggedInFg", isLoggedIn.toString())
+        if (!isLoggedIn) {
+            Log.d("MainActivity", "User not logged in. Location not sent.")
+            return
+        }
+
         if (xToken.isNullOrEmpty() || xMedsoftToken.isNullOrEmpty()) {
             Log.e("MainActivity", "Tokens not available")
             return
