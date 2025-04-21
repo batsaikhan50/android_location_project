@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+// import 'package:flutter/services.dart';
 import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:http/http.dart' as http;
 import 'package:new_project_location/constants.dart';
@@ -32,9 +32,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Map<String, dynamic> sharedPreferencesData = {};
 
-  static const platform = MethodChannel(
-    'com.example.new_project_location/location',
-  );
+  // static const platform = MethodChannel(
+  //   'com.example.new_project_location/location',
+  // );
 
   Future<void> _getInitialScreenString() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -158,6 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
           _loadSharedPreferencesData();
 
           Navigator.pushReplacement(
+            // ignore: use_build_context_synchronously
             context,
             MaterialPageRoute(
               builder: (context) {
@@ -206,200 +207,207 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    body: Center(
-      child: SingleChildScrollView(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 500,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 60.0, 16.0, 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'assets/icon/locationlogo.png',
-                  width: 150,
-                  height: 150,
-                ),
-                Text(
-                  'Тавтай морил',
-                  style: TextStyle(
-                    fontSize: 22.4,
-                    color: Color(0xFF009688),
-                    fontWeight: FontWeight.bold,
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 60.0, 16.0, 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/icon/locationlogo.png',
+                    width: 150,
+                    height: 150,
                   ),
-                ),
-                const SizedBox(height: 20),
-
-                if (_serverNames.isNotEmpty)
-                  Container(
-                    height: 56,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Color(0xFF808080),
-                        width: 1.0,
-                        style: BorderStyle.solid,
-                      ),
+                  Text(
+                    'Тавтай морил',
+                    style: TextStyle(
+                      fontSize: 22.4,
+                      color: Color(0xFF009688),
+                      fontWeight: FontWeight.bold,
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.local_hospital, color: Colors.black),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: DropdownButton<Map<String, String>>(
-                            value: _selectedRole,
-                            hint: const Text('Эмнэлэг сонгох'),
-                            isExpanded: true,
-                            onChanged: (Map<String, String>? newValue) async {
-                              if (newValue != null) {
-                                setState(() {
-                                  _selectedRole = newValue;
-                                });
-                                SharedPreferences prefs =
-                                    await SharedPreferences.getInstance();
-                                await prefs.setString(
-                                  'forgetUrl',
-                                  newValue['url'] ?? '',
-                                );
-                              }
-                            },
-                            items: _serverNames.map<
-                                DropdownMenuItem<Map<String, String>>>(
-                              (Map<String, String> value) {
-                                return DropdownMenuItem<Map<String, String>>(
-                                  value: value,
-                                  child: Text(value['name']!),
-                                );
-                              },
-                            ).toList(),
-                            underline: const SizedBox.shrink(),
-                          ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  if (_serverNames.isNotEmpty)
+                    Container(
+                      height: 56,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Color(0xFF808080),
+                          width: 1.0,
+                          style: BorderStyle.solid,
                         ),
-                      ],
-                    ),
-                  ),
-                const SizedBox(height: 20),
-
-                TextField(
-                  controller: _usernameController,
-                  decoration: InputDecoration(
-                    labelText: 'Нэвтрэх нэр',
-                    prefixIcon: const Icon(Icons.person),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                TextField(
-                  controller: _passwordController,
-                  obscureText: !_isPasswordVisible,
-                  decoration: InputDecoration(
-                    labelText: 'Нууц үг',
-                    prefixIcon: const Icon(Icons.lock),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isPasswordVisible
-                            ? Icons.visibility
-                            : Icons.visibility_off,
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
-                      },
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                if (_errorMessage.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Text(
-                      _errorMessage,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  ),
-
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: GestureDetector(
-                    onTap: () async {
-                      SharedPreferences prefs =
-                          await SharedPreferences.getInstance();
-                      String? baseUrl = prefs.getString('forgetUrl');
-                      String? hospital = _selectedRole?['name'];
-
-                      if (baseUrl != null &&
-                          baseUrl.isNotEmpty &&
-                          hospital != null) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => WebViewScreen(
-                              url:
-                                  '$baseUrl/forget?callback=medsofttrack://callback',
-                              title: '$hospital',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.local_hospital, color: Colors.black),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: DropdownButton<Map<String, String>>(
+                              value: _selectedRole,
+                              hint: const Text('Эмнэлэг сонгох'),
+                              isExpanded: true,
+                              onChanged: (Map<String, String>? newValue) async {
+                                if (newValue != null) {
+                                  setState(() {
+                                    _selectedRole = newValue;
+                                  });
+                                  SharedPreferences prefs =
+                                      await SharedPreferences.getInstance();
+                                  await prefs.setString(
+                                    'forgetUrl',
+                                    newValue['url'] ?? '',
+                                  );
+                                }
+                              },
+                              items:
+                                  _serverNames.map<
+                                    DropdownMenuItem<Map<String, String>>
+                                  >((Map<String, String> value) {
+                                    return DropdownMenuItem<
+                                      Map<String, String>
+                                    >(
+                                      value: value,
+                                      child: Text(value['name']!),
+                                    );
+                                  }).toList(),
+                              underline: const SizedBox.shrink(),
                             ),
                           ),
-                        );
-                      } else {
-                        setState(() {
-                          _errorMessage =
-                              'Нууц үг солихын тулд эмнэлэг сонгоно уу.';
-                        });
-                      }
-                    },
-                    child: Text(
-                      'Нууц үг мартсан?',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Color(0xFF009688),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+
+                  TextField(
+                    controller: _usernameController,
+                    decoration: InputDecoration(
+                      labelText: 'Нэвтрэх нэр',
+                      prefixIcon: const Icon(Icons.person),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 20),
 
-                const SizedBox(height: 10),
-
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF009688),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 0,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    minimumSize: const Size(double.infinity, 40),
-                  ),
-                  onPressed: _isLoading ? null : _login,
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'НЭВТРЭХ',
-                          style: TextStyle(fontSize: 15, color: Colors.white),
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: !_isPasswordVisible,
+                    decoration: InputDecoration(
+                      labelText: 'Нууц үг',
+                      prefixIcon: const Icon(Icons.lock),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                         ),
-                ),
-              ],
+                        onPressed: () {
+                          setState(() {
+                            _isPasswordVisible = !_isPasswordVisible;
+                          });
+                        },
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  if (_errorMessage.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Text(
+                        _errorMessage,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: () async {
+                        SharedPreferences prefs =
+                            await SharedPreferences.getInstance();
+                        String? baseUrl = prefs.getString('forgetUrl');
+                        String? hospital = _selectedRole?['name'];
+
+                        if (baseUrl != null &&
+                            baseUrl.isNotEmpty &&
+                            hospital != null) {
+                          Navigator.push(
+                            // ignore: use_build_context_synchronously
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => WebViewScreen(
+                                    url:
+                                        '$baseUrl/forget?callback=medsofttrack://callback',
+                                    title: hospital,
+                                  ),
+                            ),
+                          );
+                        } else {
+                          setState(() {
+                            _errorMessage =
+                                'Нууц үг солихын тулд эмнэлэг сонгоно уу.';
+                          });
+                        }
+                      },
+                      child: Text(
+                        'Нууц үг мартсан?',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Color(0xFF009688),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF009688),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 0,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      minimumSize: const Size(double.infinity, 40),
+                    ),
+                    onPressed: _isLoading ? null : _login,
+                    child:
+                        _isLoading
+                            ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                            : const Text(
+                              'НЭВТРЭХ',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Colors.white,
+                              ),
+                            ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 }

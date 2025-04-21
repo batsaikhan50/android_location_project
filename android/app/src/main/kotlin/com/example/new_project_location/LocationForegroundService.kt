@@ -17,7 +17,7 @@ import kotlinx.coroutines.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
 class LocationForegroundService : Service() {
@@ -44,19 +44,19 @@ class LocationForegroundService : Service() {
         // val isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false)
         // Log.d("isLoggedInBg", isLoggedIn.toString())
         // if (isLoggedIn) {
-        //     Log.d("LocationService", "User is logged in. Starting foreground service and location updates.")
+        //     Log.d("LocationService", "User is logged in. Starting foreground service and location
+        // updates.")
         //     startForeground(1, createNotification("Байршил дамжуулж байна..."))
         //     startLocationUpdates()
         // } else {
         //     Log.d("LocationService", "User is not logged in. Foreground service will not start.")
         //     stopSelf() // Optionally stop the service if user is not logged in
         // }
-    
+
         startForeground(1, createNotification("Байршил дамжуулж байна..."))
         startLocationUpdates()
         return START_STICKY
     }
-    
 
     private fun createNotification(content: String): Notification {
         val channelId = "location_channel"
@@ -159,10 +159,7 @@ class LocationForegroundService : Service() {
                 jsonBody.put("lng", location.longitude)
 
                 val requestBody =
-                        RequestBody.create(
-                                "application/json".toMediaTypeOrNull(),
-                                jsonBody.toString()
-                        )
+                        jsonBody.toString().toRequestBody("application/json".toMediaTypeOrNull())
 
                 val request =
                         Request.Builder()

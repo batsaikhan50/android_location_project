@@ -78,7 +78,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
-  late String _displayText = '';
   String _liveLocation = "Fetching live location...";
   final List<String> _locationHistory = [];
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -94,10 +93,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
-  late Animation<double> _fadeAnimation;
   bool _isLocationSent = false;
 
-final _appLinks = AppLinks();
+  final _appLinks = AppLinks();
 
   @override
   void initState() {
@@ -122,10 +120,6 @@ final _appLinks = AppLinks();
       end: Offset(0, 0),
     ).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 0.8).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
@@ -152,36 +146,34 @@ final _appLinks = AppLinks();
   //   }
   // }
 
-void _initDeepLinks() async {
-  try {
-    // Handle the initial link (cold start)
-    final initialUri = await _appLinks.getInitialLink();
-    if (initialUri != null) {
-      _handleUri(initialUri);
-    }
+  void _initDeepLinks() async {
+    try {
+      // Handle the initial link (cold start)
+      final initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null) {
+        _handleUri(initialUri);
+      }
 
-    // Handle background/resume links
-    _appLinks.uriLinkStream.listen((Uri uri) {
-      _handleUri(uri);
-    });
-  } catch (e) {
-    debugPrint('Error in deep link handling: $e');
-  }
-}
-
-
-void _handleUri(Uri uri) {
-  debugPrint('Received URI: $uri');
-  if (uri.scheme == 'medsofttrack' && uri.host == 'callback') {
-    final success = uri.queryParameters['success'];
-    if (success == 'true') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Амжилттай баталгаажлаа!')),
-      );
+      // Handle background/resume links
+      _appLinks.uriLinkStream.listen((Uri uri) {
+        _handleUri(uri);
+      });
+    } catch (e) {
+      debugPrint('Error in deep link handling: $e');
     }
   }
-}
 
+  void _handleUri(Uri uri) {
+    debugPrint('Received URI: $uri');
+    if (uri.scheme == 'medsofttrack' && uri.host == 'callback') {
+      final success = uri.queryParameters['success'];
+      if (success == 'true') {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Амжилттай баталгаажлаа!')));
+      }
+    }
+  }
 
   Future<void> _startLocationTracking() async {
     try {
@@ -212,32 +204,6 @@ void _handleUri(Uri uri) {
       });
     } on PlatformException catch (e) {
       debugPrint("Failed to send xToken to AppDelegate: '${e.message}'.");
-    }
-  }
-
-  Future<void> _getInitialScreenString() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-
-    String? xServer = prefs.getString('X-Server');
-    bool isGotToken = xServer != null && xServer.isNotEmpty;
-
-    String? xMedsoftServer = prefs.getString('X-Medsoft-Token');
-    bool isGotMedsoftToken =
-        xMedsoftServer != null && xMedsoftServer.isNotEmpty;
-
-    String? username = prefs.getString('Username');
-    bool isGotUsername = username != null && username.isNotEmpty;
-
-    _displayText =
-        'isLoggedIn: $isLoggedIn, isGotToken: $isGotToken, isGotMedsoftToken: $isGotMedsoftToken, isGotUsername: $isGotUsername';
-
-    if (isLoggedIn && isGotToken && isGotMedsoftToken && isGotUsername) {
-      debugPrint(
-        'isLoggedIn: $isLoggedIn, isGotToken: $isGotToken, isGotMedsoftToken: $isGotMedsoftToken, isGotUsername: $isGotUsername',
-      );
-    } else {
-      return debugPrint("empty shared");
     }
   }
 
@@ -300,14 +266,14 @@ void _handleUri(Uri uri) {
   Future<void> _showNotification() async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-          'your_channel_id',
-          'your_channel_name',
-          channelDescription: 'Your channel description',
+          'medsoft_track',
+          'Medsoft Track Notifications',
+          channelDescription: 'Ambulance Tracking Application',
           importance: Importance.max,
           priority: Priority.high,
           showWhen: false,
           channelShowBadge: true,
-          icon: 'launcher_icon'
+          icon: 'launcher_icon',
         );
 
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
@@ -491,7 +457,7 @@ void _handleUri(Uri uri) {
                         : MediaQuery.of(context).size.width;
 
                 return Center(
-                  child: Container(
+                  child: SizedBox(
                     width: width,
                     height: 200,
                     child: ListView.builder(

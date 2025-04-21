@@ -20,7 +20,7 @@ import kotlinx.coroutines.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
 class MainActivity : FlutterActivity() {
@@ -129,12 +129,12 @@ class MainActivity : FlutterActivity() {
                 AlertDialog.Builder(this)
                         .setView(dialogView)
                         .setCancelable(false)
-                        .setPositiveButton("Yes") { dialogInterface: DialogInterface, which: Int ->
+                        .setPositiveButton("Yes") { dialogInterface: DialogInterface, _: Int ->
                             shouldRetryStartLocationManager = true
                             openAppSettings()
                             dialogInterface.dismiss()
                         }
-                        .setNegativeButton("No") { dialogInterface: DialogInterface, which: Int ->
+                        .setNegativeButton("No") { dialogInterface: DialogInterface, _: Int ->
                             dialogInterface.dismiss()
                             isBackgroundPermissionDialogShown = false
                             Log.d(
@@ -162,11 +162,11 @@ class MainActivity : FlutterActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == 1) {
-            val allGranted =
-                    grantResults.isNotEmpty() &&
-                            grantResults.all {
-                                it == android.content.pm.PackageManager.PERMISSION_GRANTED
-                            }
+            // val allGranted =
+            //         grantResults.isNotEmpty() &&
+            //                 grantResults.all {
+            //                     it == android.content.pm.PackageManager.PERMISSION_GRANTED
+            //                 }
 
             if (!hasWhileInUsePermission()) {
                 Log.d("Permission", "While in use not granted. Prompting again...")
@@ -349,11 +349,14 @@ class MainActivity : FlutterActivity() {
                 jsonBody.put("lat", location.latitude)
                 jsonBody.put("lng", location.longitude)
 
+                // val requestBody =
+                //         RequestBody.create(
+                //                 "application/json".toMediaTypeOrNull(),
+                //                 jsonBody.toString()
+                //         )
+
                 val requestBody =
-                        RequestBody.create(
-                                "application/json".toMediaTypeOrNull(),
-                                jsonBody.toString()
-                        )
+                        jsonBody.toString().toRequestBody("application/json".toMediaTypeOrNull())
 
                 val request =
                         Request.Builder()
