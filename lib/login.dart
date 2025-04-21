@@ -212,7 +212,7 @@ Widget build(BuildContext context) {
       child: SingleChildScrollView(
         child: ConstrainedBox(
           constraints: const BoxConstraints(
-            maxWidth: 500, // Prevents overly wide fields on tablets
+            maxWidth: 500,
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16.0, 60.0, 16.0, 16.0),

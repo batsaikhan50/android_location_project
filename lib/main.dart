@@ -307,6 +307,7 @@ void _handleUri(Uri uri) {
           priority: Priority.high,
           showWhen: false,
           channelShowBadge: true,
+          icon: 'launcher_icon'
         );
 
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =

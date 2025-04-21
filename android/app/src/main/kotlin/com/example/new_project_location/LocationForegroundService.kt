@@ -71,7 +71,7 @@ class LocationForegroundService : Service() {
         return NotificationCompat.Builder(this, channelId)
                 .setContentTitle("Medsoft track")
                 .setContentText(content)
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(R.drawable.launcher_icon)
                 .setNumber(0)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setAutoCancel(true)
