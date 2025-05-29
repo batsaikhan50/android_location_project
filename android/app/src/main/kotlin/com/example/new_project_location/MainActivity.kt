@@ -59,7 +59,6 @@ class MainActivity : FlutterActivity() {
                 "sendLocationToAPIByButton" -> sendLocationToAPIByButton(result)
                 "startLocationManagerAfterLogin" -> {
                     if (!hasWhileInUsePermission()) {
-
                         Log.d("PermissionFlow", "Requesting While in Use permission...")
                         requestLocationPermissions()
                         result.success(null)
@@ -67,7 +66,6 @@ class MainActivity : FlutterActivity() {
                     }
 
                     if (!isBackgroundLocationGranted()) {
-
                         Log.d(
                                 "PermissionFlow",
                                 "While in Use granted. Requesting Always permission..."

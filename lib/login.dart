@@ -219,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Image.asset(
-                    'assets/icon/locationlogo.png',
+                    'assets/icon/locationlogoTrans.png',
                     width: 150,
                     height: 150,
                   ),

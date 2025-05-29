@@ -74,10 +74,13 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/icon/locationlogo.png
+    - assets/icon/locationlogoTrans.png
     - assets/guide/always.png
+    - assets/guide/precision.png
     - assets/guide/battery.png
-    - assets/guide/pauseapp.png
-    - assets/guide/removepermission.png
+    - assets/guide/removePermission.png
+    - assets/guide/pauseApp.png
+    - assets/guide/allowBgAndDataSaver.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
