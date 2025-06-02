@@ -1,12 +1,12 @@
 import 'dart:async';
 
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:new_project_location/constants.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:new_project_location/guide.dart';
-import 'package:app_links/app_links.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'login.dart';
 

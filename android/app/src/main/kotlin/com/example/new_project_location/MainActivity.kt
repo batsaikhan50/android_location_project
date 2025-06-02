@@ -328,13 +328,6 @@ class MainActivity : FlutterActivity() {
     }
 
     fun sendLocationToAPI(location: Location) {
-        // val isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false)
-        // Log.d("isLoggedInFg", isLoggedIn.toString())
-        // if (!isLoggedIn) {
-        //     Log.d("MainActivity", "User not logged in. Location not sent.")
-        //     return
-        // }
-
         if (xToken.isNullOrEmpty() || xMedsoftToken.isNullOrEmpty()) {
             Log.e("MainActivity", "Tokens not available")
             return
@@ -346,12 +339,6 @@ class MainActivity : FlutterActivity() {
                 val jsonBody = JSONObject()
                 jsonBody.put("lat", location.latitude)
                 jsonBody.put("lng", location.longitude)
-
-                // val requestBody =
-                //         RequestBody.create(
-                //                 "application/json".toMediaTypeOrNull(),
-                //                 jsonBody.toString()
-                //         )
 
                 val requestBody =
                         jsonBody.toString().toRequestBody("application/json".toMediaTypeOrNull())
