@@ -184,9 +184,9 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
     _passwordController.addListener(_updatePasswordRules);
     _passwordCheckController.addListener(_updatePasswordRules);
-    _regNoController.addListener(_validateRegNo); 
-    _firstnameController.addListener(_validateName); 
-    _lastnameController.addListener(_validateName); 
+    _regNoController.addListener(_validateRegNo);
+    _firstnameController.addListener(_validateName);
+    _lastnameController.addListener(_validateName);
 
     _dragPosition =
         _selectedToggleIndex *
@@ -399,11 +399,11 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        double totalWidth =
-            constraints.maxWidth; // 16 padding on each side
+        double totalWidth = constraints.maxWidth; // 16 padding on each side
         // if (totalWidth < 0) totalWidth = constraints.maxWidth; // safety check
-        
-double knobWidth = (totalWidth - 8) / 2; // keep 8 as gap between toggles
+
+        double knobWidth =
+            (totalWidth - 8) / 2; // keep 8 as gap between toggles
 
         return GestureDetector(
           onHorizontalDragUpdate: (details) {
@@ -569,7 +569,7 @@ double knobWidth = (totalWidth - 8) / 2; // keep 8 as gap between toggles
           maxWidth = constraints.maxWidth * 0.5;
         } else {
           // Phone: full width (with padding)
-          maxWidth = constraints.maxWidth - 32; 
+          maxWidth = constraints.maxWidth - 32;
         }
 
         return Center(
@@ -605,26 +605,25 @@ double knobWidth = (totalWidth - 8) / 2; // keep 8 as gap between toggles
                     buildAnimatedToggle(),
                     const SizedBox(height: 20),
 
-                    if (_selectedToggleIndex == 0)
-                      TextFormField(
-                        controller: _codeController,
-                        focusNode: _codeFocus,
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted:
-                            (_) => FocusScope.of(context).unfocus(),
-                        keyboardType: TextInputType.text,
-                        decoration: InputDecoration(
-                          labelText: 'Нэг удаагын код',
-                          prefixIcon: const Icon(Icons.vpn_key),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-
-                    if (_selectedToggleIndex == 0) const SizedBox(height: 20),
-
-                    if (_serverNames.isNotEmpty && _selectedToggleIndex == 1)
+                    // if (_selectedToggleIndex == 0)
+                    //   TextFormField(
+                    //     controller: _codeController,
+                    //     focusNode: _codeFocus,
+                    //     textInputAction: TextInputAction.done,
+                    //     onFieldSubmitted:
+                    //         (_) => FocusScope.of(context).unfocus(),
+                    //     keyboardType: TextInputType.text,
+                    //     decoration: InputDecoration(
+                    //       labelText: 'Нэг удаагын код',
+                    //       prefixIcon: const Icon(Icons.vpn_key),
+                    //       border: OutlineInputBorder(
+                    //         borderRadius: BorderRadius.circular(12),
+                    //       ),
+                    //     ),
+                    //   ),
+                    if (_serverNames.isNotEmpty &&
+                        (_selectedToggleIndex == 0 ||
+                            _selectedToggleIndex == 1))
                       Container(
                         height: 56,
                         padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -681,10 +680,12 @@ double knobWidth = (totalWidth - 8) / 2; // keep 8 as gap between toggles
                         ),
                       ),
 
-                    if (_serverNames.isNotEmpty && _selectedToggleIndex == 1)
+                    if (_serverNames.isNotEmpty &&
+                        (_selectedToggleIndex == 0 ||
+                            _selectedToggleIndex == 1))
                       const SizedBox(height: 20),
 
-                    if (_selectedToggleIndex == 1)
+                    if (_selectedToggleIndex == 0 || _selectedToggleIndex == 1)
                       TextFormField(
                         controller: _usernameController,
                         focusNode: _usernameFocus,
@@ -701,9 +702,12 @@ double knobWidth = (totalWidth - 8) / 2; // keep 8 as gap between toggles
                         ),
                       ),
 
-                    if (_selectedToggleIndex == 1) const SizedBox(height: 20),
+                    if (_serverNames.isNotEmpty &&
+                        (_selectedToggleIndex == 0 ||
+                            _selectedToggleIndex == 1))
+                      const SizedBox(height: 20),
 
-                    if (_selectedToggleIndex == 1)
+                    if (_selectedToggleIndex == 0 || _selectedToggleIndex == 1)
                       TextFormField(
                         controller: _passwordController,
                         focusNode: _passwordFocus,
@@ -769,7 +773,10 @@ double knobWidth = (totalWidth - 8) / 2; // keep 8 as gap between toggles
                             }).toList(),
                       ),
 
-                    if (_selectedToggleIndex == 1) const SizedBox(height: 20),
+                    if (_serverNames.isNotEmpty &&
+                        (_selectedToggleIndex == 0 ||
+                            _selectedToggleIndex == 1))
+                      const SizedBox(height: 20),
                     if (_selectedToggleIndex == 1)
                       TextFormField(
                         controller: _passwordCheckController,
@@ -902,7 +909,7 @@ double knobWidth = (totalWidth - 8) / 2; // keep 8 as gap between toggles
                         ),
                       ),
 
-                    if (_selectedToggleIndex == 1)
+                    if (_selectedToggleIndex == 0)
                       Align(
                         alignment: Alignment.centerRight,
                         child: GestureDetector(
@@ -944,7 +951,8 @@ double knobWidth = (totalWidth - 8) / 2; // keep 8 as gap between toggles
                         ),
                       ),
 
-                    if (_selectedToggleIndex == 1) const SizedBox(height: 10),
+                    if (_selectedToggleIndex == 0 || _selectedToggleIndex == 1)
+                      const SizedBox(height: 10),
 
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -975,8 +983,10 @@ double knobWidth = (totalWidth - 8) / 2; // keep 8 as gap between toggles
                               ? const CircularProgressIndicator(
                                 color: Colors.white,
                               )
-                              : const Text(
-                                'НЭВТРЭХ',
+                              : Text(
+                                _selectedToggleIndex == 0
+                                    ? 'НЭВТРЭХ'
+                                    : 'БҮРТГҮҮЛЭХ',
                                 style: TextStyle(
                                   fontSize: 15,
                                   color: Colors.white,
